@@ -228,7 +228,7 @@ def preprocess_tau_sed_data(data_dir, preprocess_mode, force_preprocess=False, f
     ambisonic_2019_data_dir = f"{data_dir}/Tau_sound_events_2019"
     audio_dir, meta_data_dir = ensure_tau_data(ambisonic_2019_data_dir, fold_name=fold_name)
 
-    processed_data_dir = os.path.join(ambisonic_2019_data_dir, 'processed', f"{dataset.spectogram_features.spectogram_configs.cfg_descriptor}")
+    processed_data_dir = os.path.join(ambisonic_2019_data_dir, 'processed', f"{cfg.cfg_descriptor}")
     features_and_labels_dir = f"{processed_data_dir}/{preprocess_mode}-features_and_labels_{fold_name}"
     features_mean_std_file = f"{processed_data_dir}/{preprocess_mode}-features_mean_std_{fold_name}.pkl"
     if not os.path.exists(features_and_labels_dir) or force_preprocess:
@@ -249,8 +249,8 @@ def preprocess_film_clap_data(data_dir, preprocessed_mode, force_preprocess=Fals
     cfg.cfg_descriptor += f"_tm-{cfg.time_margin}"
     if not os.path.exists(film_clap_dir):
         raise Exception("You should get you own dataset...")
-    features_and_labels_dir = f"{film_clap_dir}/processed/{dataset.spectogram.spectogram_configs.cfg_descriptor}/{preprocessed_mode}-features_and_labels"
-    features_mean_std_file = f"{film_clap_dir}/processed/{dataset.spectogram.spectogram_configs.cfg_descriptor}/{preprocessed_mode}-features_mean_std.pkl"
+    features_and_labels_dir = f"{film_clap_dir}/processed/{cfg.cfg_descriptor}/{preprocessed_mode}-features_and_labels"
+    features_mean_std_file = f"{film_clap_dir}/processed/{cfg.cfg_descriptor}/{preprocessed_mode}-features_mean_std.pkl"
     if not os.path.exists(features_and_labels_dir) or force_preprocess:
         print("preprocessing raw data")
         audio_paths_and_labels = get_film_clap_paths_and_labels(audio_and_labels_dir, time_margin=cfg.time_margin)

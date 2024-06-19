@@ -94,8 +94,8 @@ def train(model, data_loader, criterion, num_steps, lr, log_freq, outputs_dir, d
             tqdm_bar.update()
             # forward
             model.train()
-            batch_outputs = model(batch_features.to(device).float())
-            loss = criterion(batch_outputs, event_labels.to(device).float())
+            batch_outputs = model(batch_features.to(torch.float32).to(device))
+            loss = criterion(batch_outputs, event_labels.to(torch.float32).to(device))
 
             # Backward
             optimizer.zero_grad()
