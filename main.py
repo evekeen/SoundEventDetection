@@ -114,7 +114,7 @@ if __name__ == '__main__':
 
     # Infrastructure
     parser.add_argument('--device', default='cuda:0', type=str)
-    parser.add_argument('--num_workers', default=1, type=int)
+    parser.add_argument('--num_workers', default=12, type=int)
 
     args = parser.parse_args()
 
