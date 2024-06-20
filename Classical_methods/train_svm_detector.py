@@ -51,7 +51,7 @@ class SVM_detector:
 def get_raw_data():
     NFFT = 2**int(np.ceil(np.log2(cfg.frame_size)))
 
-    audio_paths_labels_and_names = get_film_clap_paths_and_labels("../../data/FilmClap", time_margin=cfg.time_margin)
+    audio_paths_labels_and_names = get_film_clap_paths_and_labels("../data/FilmClap", time_margin=cfg.time_margin)
 
     features = []
     label_sets = []

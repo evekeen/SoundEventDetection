@@ -86,9 +86,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Example of parser. ')
 
     # Traininng
-    parser.add_argument('--dataset_dir', type=str, default='../data', help='Directory of dataset.')
-    parser.add_argument('--dataset_name', type=str, default='FilmClap', help='FilmClap or TAU')
-    parser.add_argument('--train_features', type=str, default='Waveform', help='Spectogram or Waveform')
+    parser.add_argument('--dataset_dir', type=str, default='data', help='Directory of dataset.')
+    parser.add_argument('--dataset_name', type=str, default='TAU', help='FilmClap or TAU')
+    parser.add_argument('--train_features', type=str, default='Spectogram', help='Spectogram or Waveform')
 
     # Spectogram only arguments
     parser.add_argument('--preprocess_mode', type=str, default='logMel', help='logMel or Complex; relevant only for Spectogram features')
@@ -110,15 +110,15 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=128)
     parser.add_argument('--lr', type=float, default=0.000001)
     parser.add_argument('--num_train_steps', type=int, default=100000)
-    parser.add_argument('--log_freq', type=int, default=5000)
+    parser.add_argument('--log_freq', type=int, default=1000)
 
     # Infrastructure
     parser.add_argument('--device', default='cuda:0', type=str)
-    parser.add_argument('--num_workers', default=12, type=int)
+    parser.add_argument('--num_workers', default=1, type=int)
 
     args = parser.parse_args()
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() and args.device == "cuda:0" else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() and args.device == "cuda:0" else "mps")
 
     dataset, model, criterion, cfg_descriptor = get_dataset_and_model(args)
 

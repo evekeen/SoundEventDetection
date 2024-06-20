@@ -88,14 +88,15 @@ def train(model, data_loader, criterion, num_steps, lr, log_freq, outputs_dir, d
     epoch = 0
     training_start_time = time()
     tqdm_bar = tqdm(total=num_steps)
+    tqdm_bar.update(iterations)
     tqdm_bar.set_description("Waiting for information..")
     while iterations < num_steps:
         for (batch_features, event_labels) in data_loader:
             tqdm_bar.update()
             # forward
             model.train()
-            batch_outputs = model(batch_features.to(device).float())
-            loss = criterion(batch_outputs, event_labels.to(device).float())
+            batch_outputs = model(batch_features.to(torch.float32).to(device))
+            loss = criterion(batch_outputs, event_labels.to(torch.float32).to(device))
 
             # Backward
             optimizer.zero_grad()

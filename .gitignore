@@ -12,3 +12,5 @@ Classical_methods/svm-classification.png
 Classical_methods/plots
 
 tmp_file.WAV
+data/
+.DS_Store

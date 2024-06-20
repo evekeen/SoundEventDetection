@@ -45,6 +45,8 @@ def get_tau_sed_paths_and_labels(audio_dir, labels_data_dir):
     """
     results = []
     for audio_fname in os.listdir(audio_dir):
+        if not audio_fname.endswith('.wav'):
+            continue
         bare_name = os.path.splitext(audio_fname)[0]
 
         audio_path = os.path.join(audio_dir, audio_fname)

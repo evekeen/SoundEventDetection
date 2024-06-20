@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  trex:
+    image: ivkin/sed
+    build:
+      context: .
+    container_name: sed
+    volumes:
+      - .:/sed:delegated
+    entrypoint: ['python', 'main.py']

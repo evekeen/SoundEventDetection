@@ -12,7 +12,7 @@ matplotlib.use('TkAgg')
 if __name__ == '__main__':
 
 
-    features_and_labels_dir, features_mean_std_file = preprocess_film_clap_data('../../data',
+    features_and_labels_dir, features_mean_std_file = preprocess_film_clap_data('../data',
                                                                                 preprocessed_mode="logMel",
                                                                                 force_preprocess=False)
 
