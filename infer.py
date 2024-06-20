@@ -1,10 +1,11 @@
 import argparse
 import os
-from models import *
+import torch
+from models.spectogram_models import *
 from dataset.spectogram import spectogram_configs as cfg
 from dataset.spectogram.preprocess import multichannel_stft, multichannel_complex_to_log_mel
 from dataset.dataset_utils import read_multichannel_audio
-from utils import plot_debug_image
+from utils.plot_utils import plot_sample_features
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Example of parser. ')
@@ -18,20 +19,27 @@ if __name__ == '__main__':
 
     device = torch.device("cuda:0" if torch.cuda.is_available() and args.device == "cuda:0" else "cpu")
 
-    model = Cnn_AvgPooling(cfg.classes_num).to(device)
-    # checkpoint = torch.load(args.ckpt, map_location=device)
-    # model.load_state_dict(checkpoint['model'])
+    model = Cnn_AvgPooling(cfg.classes_num, model_config=[(32,2), (64,2), (128,2), (128,1)]).to(device)
+    checkpoint = torch.load(args.ckpt, map_location=device)
+    model.load_state_dict(checkpoint['model'])
 
     print("Preprocessing audio file..")
 
     multichannel_audio = read_multichannel_audio(audio_path=args.audio_file, target_fs=cfg.working_sample_rate)
 
-    log_mel_features = multichannel_complex_to_log_mel(multichannel_stft(multichannel_audio))[0]
+    log_mel_features = multichannel_complex_to_log_mel(multichannel_stft(multichannel_audio))
+    
+    # cropped = log_mel_features[:, :cfg.train_crop_size, :]
 
     print("Inference..")
     with torch.no_grad():
-        output_event = model(torch.from_numpy(log_mel_features).to(device).float().unsqueeze(1))
+        input = torch.from_numpy(log_mel_features).to(torch.float32).to(device)
+        output_event = model(input.unsqueeze(0))
     output_event = output_event.cpu()
     os.makedirs(args.outputs_dir, exist_ok=True)
-
-    plot_debug_image(log_mel_features, output=output_event[0], plot_path=os.path.join(args.outputs_dir, f"{os.path.splitext(os.path.basename(args.audio_file))[0]}.png"))
+    print(input.shape, output_event.shape)
+    plot_sample_features(log_mel_features,
+                         mode='Spectrogram', 
+                         output=output_event[0], 
+                         plot_path=os.path.join(args.outputs_dir, f"{os.path.splitext(os.path.basename(args.audio_file))[0]}.png")
+                         )

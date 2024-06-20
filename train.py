@@ -88,6 +88,7 @@ def train(model, data_loader, criterion, num_steps, lr, log_freq, outputs_dir, d
     epoch = 0
     training_start_time = time()
     tqdm_bar = tqdm(total=num_steps)
+    tqdm_bar.update(iterations)
     tqdm_bar.set_description("Waiting for information..")
     while iterations < num_steps:
         for (batch_features, event_labels) in data_loader:
