@@ -11,6 +11,9 @@ __pycache__/
 Classical_methods/svm-classification.png
 Classical_methods/plots
 
-tmp_file.WAV
+*.WAV
+*.wav
+*.mov
 data/
 .DS_Store
+remote-training/

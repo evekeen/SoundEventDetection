@@ -3,3 +3,10 @@
 .idea
 data/
 training_dir/
+inference_outputs/
+*.WAV
+*.wav
+*.mov
+data/
+.DS_Store
+remote-training/
