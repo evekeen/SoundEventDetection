@@ -21,9 +21,9 @@ def eval(model, dataloader, criterion, outputs_dir, iteration, device, limit_val
         model.eval()
         with torch.no_grad():
             model.eval()
-            output = model(input.to(device).float()).cpu()
+            output = model(input.to(torch.float32).to('cpu'))
 
-        loss = criterion(output, target.float())
+        loss = criterion(output, target.to(torch.float32).to('cpu'))
 
         if len(input.shape) == 4:
             mode = 'Spectogram'
