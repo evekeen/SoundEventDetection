@@ -17,3 +17,4 @@ Classical_methods/plots
 data/
 .DS_Store
 remote-training/
+*.csv
