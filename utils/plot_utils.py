@@ -32,7 +32,8 @@ def plot_spectogram(ax, spectpgram, frames_per_second):
     ax.set_yticks([0, mel_bins])
     ax.set_yticklabels([0, mel_bins])
 
-    tick_hop = frames_num // 8
+    tick_hop = max(frames_num // 8, 1)
+    print(f"frames: {frames_num} tick_hop: {tick_hop} frames_num - tick_hop: {frames_num - tick_hop}")
     xticks = np.concatenate((np.arange(0, frames_num - tick_hop, tick_hop), [frames_num]))
     xlabels = [f"frame {x}\n{x / frames_per_second:.1f}s" for x in xticks]
 
@@ -46,7 +47,7 @@ def plot_spectogram(ax, spectpgram, frames_per_second):
 def plot_classification_matrix(ax, mat, frames_per_second):
     frames_num = mat.shape[0]
     colorbar = ax.matshow(mat.T, origin='lower', aspect='auto', cmap='jet', vmin=0, vmax=1)
-    tick_hop = frames_num // 8
+    tick_hop = max(frames_num // 8, 1)
     xticks = np.concatenate((np.arange(0, frames_num - tick_hop, tick_hop), [frames_num]))
     xlabels = [f"frame {x}\n{x / frames_per_second:.1f}s" for x in xticks]
 
@@ -79,9 +80,8 @@ def plot_sample_features(input, mode, output=None, target=None, file_name=None, 
     input = input.mean(0) # Mean over channels
     if mode.lower() == 'spectogram':
         from dataset.spectogram.spectogram_configs import frames_per_second
-        axis = axs if num_plots == 1 else axs[0]
-        colorbar = plot_spectogram(axis, input, frames_per_second)
-        add_colorbar_to_axs(fig, axis, colorbar)
+        colorbar = plot_spectogram(axs[0], input, frames_per_second)
+        add_colorbar_to_axs(fig, axs[0], colorbar)
     else: # mode == 'Waveform
         from dataset.waveform.waveform_configs import working_sample_rate, hop_size
         frames_per_second = working_sample_rate // hop_size
