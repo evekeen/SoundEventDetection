@@ -12,6 +12,6 @@ frames_per_second = working_sample_rate // hop_size
 #           'keyboard', 'pageturn', 'cough', 'doorslam', 'laughter']
 
 # tau_sed_labels = ['knock', 'keysDrop', 'doorslam']
-tau_sed_labels = ['doorslam']
+tau_sed_labels = ['golf_impact']
 classes_num = len(tau_sed_labels)
 
