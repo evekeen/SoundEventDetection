@@ -49,7 +49,6 @@ def plot_spectogram(audio_path):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Example of parser. ')
 
-    # Traininng
     parser.add_argument('--input', type=str, help='file or directory to process.')
     args = parser.parse_args()
     
