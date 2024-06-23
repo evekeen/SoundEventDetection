@@ -33,7 +33,6 @@ def plot_spectogram(ax, spectpgram, frames_per_second):
     ax.set_yticklabels([0, mel_bins])
 
     tick_hop = max(frames_num // 8, 1)
-    print(f"frames: {frames_num} tick_hop: {tick_hop} frames_num - tick_hop: {frames_num - tick_hop}")
     xticks = np.concatenate((np.arange(0, frames_num - tick_hop, tick_hop), [frames_num]))
     xlabels = [f"frame {x}\n{x / frames_per_second:.1f}s" for x in xticks]
 
