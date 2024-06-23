@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-def find_loud_intervals(file_path):
+def find_loud_intervals(file_path, visualise=False):
     y, sr = librosa.load(file_path, sr=None, duration=2)
 
     hop_length = int(sr * 0.02)
@@ -62,28 +62,29 @@ def find_loud_intervals(file_path):
     longest_interval = max(loud_intervals, key=lambda interval: interval[1] - interval[0])
     print("Longest Loud Interval:", longest_interval)
 
-    plt.plot(energy)
-    plt.axhline(y=avg_energy, color='r', linestyle='--', label='Average Energy')
-    plt.xlabel('Frame')
-    plt.ylabel('Energy')
-    plt.title('Energy Plot')
-    plt.legend()
-    
-    for start_time, end_time in loud_intervals:
-        if start_time == longest_interval[0] and end_time == longest_interval[1]:
-            continue
-        start_frame = int(start_time * sr / hop_length)
-        end_frame = int(end_time * sr / hop_length)
-        plt.axvspan(start_frame, end_frame, color='g', alpha=0.3)
+    if visualise:
+        plt.plot(energy)
+        plt.axhline(y=avg_energy, color='r', linestyle='--', label='Average Energy')
+        plt.xlabel('Frame')
+        plt.ylabel('Energy')
+        plt.title('Energy Plot')
+        plt.legend()
         
-    longest_start_time, longest_end_time = longest_interval
-    longest_start_frame = int(longest_start_time * sr / hop_length)
-    longest_end_frame = int(longest_end_time * sr / hop_length)
-    plt.axvspan(longest_start_frame, longest_end_frame, color='r', alpha=0.5)
-    
-    plt.show()
+        for start_time, end_time in loud_intervals:
+            if start_time == longest_interval[0] and end_time == longest_interval[1]:
+                continue
+            start_frame = int(start_time * sr / hop_length)
+            end_frame = int(end_time * sr / hop_length)
+            plt.axvspan(start_frame, end_frame, color='g', alpha=0.3)
+            
+        longest_start_time, longest_end_time = longest_interval
+        longest_start_frame = int(longest_start_time * sr / hop_length)
+        longest_end_frame = int(longest_end_time * sr / hop_length)
+        plt.axvspan(longest_start_frame, longest_end_frame, color='r', alpha=0.5)
+        
+        plt.show()
 
-    return loud_intervals
+    return longest_interval
 
 def process_directory(directory):
     results = []
@@ -92,9 +93,9 @@ def process_directory(directory):
         for file in files:
             if file.endswith(".wav"):
                 file_path = os.path.join(root, file)
-                intervals = find_loud_intervals(file_path)
-                for start_time, end_time in intervals:
-                    results.append([file, start_time, end_time, 0, 0, 1])
+                interval = find_loud_intervals(file_path)
+                (start_time, end_time) = interval
+                results.append([file, start_time, end_time, 0, 0, 1])
     return results
 
 if __name__ == "__main__":
