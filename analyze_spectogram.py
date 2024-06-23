@@ -1,3 +1,4 @@
+import argparse
 from dataset.spectogram.preprocess import multichannel_stft, multichannel_complex_to_log_mel
 from dataset.dataset_utils import read_multichannel_audio
 from dataset.spectogram import spectogram_configs as cfg
@@ -5,16 +6,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import soundfile
 import matplotlib
-
 from utils.plot_utils import plot_sample_features
+import os
+
 matplotlib.use('TkAgg')
 
-if __name__ == '__main__':
-    # audio_path = '/home/ariel/projects/sound/data/FilmClap/original/Meron/S005-S004T1.WAV'
-    # audio_path = '/home/ariel/projects/sound/data/FilmClap/original/StillJames/2C-T001.WAV'
-    # audio_path = '/home/ariel/projects/sound/data/FilmClap/original/JackRinger-05/161019_1233.wav'
-    audio_path = 'test.wav'
-
+def plot_spectogram(audio_path):
     sec_start = 0.0
     sec_end = 1.00
 
@@ -44,17 +41,27 @@ if __name__ == '__main__':
     signal = signal[:2000]
     ax.plot(range(len(signal)), signal)
 
-    # ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
     plt.autoscale(tight=True)
-    
-    # plot_sample_features(
-    #     input=feature,
-    #     mode='Spectogram',
-    #     output=None,
-    #     target=None,
-    #     file_name=audio_path,
-    #     plot_path='./tmp.png'
-    # )
-
     plt.show()
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Example of parser. ')
+
+    # Traininng
+    parser.add_argument('--input', type=str, help='file or directory to process.')
+    args = parser.parse_args()
+    
+    if args.input is None:
+        raise ValueError("Please provide input file")
+    
+    if os.path.isdir(args.input):
+        for file_name in os.listdir(args.input):
+            if file_name.endswith(".wav"):
+                print(f"Analyzing {file_name}")
+                audio_path = os.path.join(args.input, file_name)
+                plot_spectogram(audio_path)
+    else:
+        plot_spectogram(args.input)
+    
