@@ -87,25 +87,22 @@ def find_loud_intervals(file_path, visualise=False):
     return longest_interval
 
 def process_directory(directory):
-    results = []
-    for root, dirs, files in os.walk(directory):
+    for root, _, files in os.walk(directory):
         files.sort()
         for file in files:
             if file.endswith(".wav"):
                 file_path = os.path.join(root, file)
                 interval = find_loud_intervals(file_path)
                 (start_time, end_time) = interval
-                results.append([file, start_time, end_time, 0, 0, 1])
-    return results
+                data = [['golf_impact', start_time, end_time, 0, 0, 1]]
+                df = pd.DataFrame(data, columns=["sound_event_recording","start_time","end_time","ele","azi","dist"])
+                csv_file = file_path.replace('.wav', '.csv')
+                df.to_csv(csv_file, index=False)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Example of parser. ')
     parser.add_argument('--input', type=str, help='file or directory to process.')
     args = parser.parse_args()
     
-    data = process_directory(args.input)
-
-    df = pd.DataFrame(data, columns=['event', 'start_time', 'end_time', 'azymuth', 'elevation', 'distance'])
-    df.to_csv('dataset.csv', index=False)
-
+    process_directory(args.input)
     print("CSV file has been created.")
