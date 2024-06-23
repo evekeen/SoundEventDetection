@@ -21,7 +21,7 @@ def eval(model, dataloader, criterion, outputs_dir, iteration, device, limit_val
         model.eval()
         with torch.no_grad():
             model.eval()
-            print(f"Validation sample {idx+1}/{len(val_sampler)} input: {input.shape}, target: {target.shape}")
+            print(f"Validation sample input: {input.shape}, target: {target.shape}")
             output = model(input.to(torch.float32).to(device))
 
         loss = criterion(output, target.to(torch.float32).to(device))
