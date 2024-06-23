@@ -27,33 +27,34 @@ if __name__ == '__main__':
     feature = multichannel_complex_to_log_mel(feature)
 
     frames_num = feature.shape[1]
-    print(f"frames_num: {feature.shape}")
+    print(f"frames: {frames_num}")
     tick_hop = max(1, frames_num // 20)
     xticks = np.concatenate((np.arange(0, frames_num - tick_hop, tick_hop), [frames_num]))
     xlabels = [f"{x / cfg.frames_per_second:.3f}s" for x in xticks]
 
     fig = plt.figure()
     ax = fig.add_subplot(211)
-    ax.matshow(feature[0].T, origin='lower', cmap='jet')
+    ax.matshow(feature[0].T, origin='lower', cmap='jet', aspect='auto')
     ax.set_xticks(xticks)
     ax.set_xticklabels(xlabels, rotation='vertical')
     ax.xaxis.set_ticks_position('bottom')
 
     ax = fig.add_subplot(212)
     signal = multichannel_waveform.mean(1)
+    signal = signal[:2000]
     ax.plot(range(len(signal)), signal)
 
-    ax.get_xaxis().set_visible(False)
+    # ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
     plt.autoscale(tight=True)
     
-    plot_sample_features(
-        input=feature,
-        mode='Spectogram',
-        output=None,
-        target=None,
-        file_name=audio_path,
-        plot_path='./tmp.png'
-    )
+    # plot_sample_features(
+    #     input=feature,
+    #     mode='Spectogram',
+    #     output=None,
+    #     target=None,
+    #     file_name=audio_path,
+    #     plot_path='./tmp.png'
+    # )
 
     plt.show()

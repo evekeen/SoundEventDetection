@@ -15,7 +15,7 @@ def get_spectogram_dataset_model_and_criterion(args):
     # Define the dataset
     if args.dataset_name.lower() == "tau":
         features_and_labels_dir, features_mean_std_file = preprocess_tau_sed_data(args.dataset_dir,
-                                                                                  fold_name='eval',
+                                                                                  fold_name='train',
                                                                                   preprocess_mode=args.preprocess_mode,
                                                                                   force_preprocess=args.force_preprocess)
     elif args.dataset_name.lower() == "filmclap":
