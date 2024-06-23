@@ -1,6 +1,6 @@
 
 time_margin = 0.33
-working_sample_rate = 48000
+working_sample_rate = 44100
 frame_size = int(working_sample_rate * time_margin * 2)
 hop_size = frame_size // 2
 audio_channels = 1
