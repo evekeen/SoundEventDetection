@@ -21,6 +21,7 @@ def eval(model, dataloader, criterion, outputs_dir, iteration, device, limit_val
         model.eval()
         with torch.no_grad():
             model.eval()
+            print(f"Validation sample {idx+1}/{len(val_sampler)} input: {input.shape}, target: {target.shape}")
             output = model(input.to(torch.float32).to(device))
 
         loss = criterion(output, target.to(torch.float32).to(device))
@@ -111,6 +112,7 @@ def train(model, data_loader, criterion, num_steps, lr, log_freq, outputs_dir, d
                     param_group['lr'] *= 0.997
 
             if iterations % log_freq == 0:
+                print('batch_features:', batch_features.shape , 'event_labels:', event_labels.shape)
                 im_sec = iterations * data_loader.batch_size / (time() - training_start_time)
                 tqdm_bar.set_description(
                     f"epoch: {epoch}, step: {iterations}, loss: {loss.item():.2f}, im/sec: {im_sec:.1f}, lr: {optimizer.param_groups[0]['lr']:.8f}")
