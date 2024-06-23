@@ -65,9 +65,6 @@ class SpectogramDataset(Dataset):
 
         data_indexes = np.arange(self.train_crop_size) + self.train_start_indices[idx]
         
-        print(f"train_crop_size type: {type(self.train_crop_size)} & {type(self.train_start_indices[idx])}")
-        print(f"Data indexes type: {type(data_indexes)} & {type(data_indexes[0])}")
-        print(f"train_crop_size: {self.train_crop_size} train_start_indices: {self.train_start_indices[idx]}")
 
         features = self.train_features[:, data_indexes]
         event_matrix = self.train_event_matrix[data_indexes]
