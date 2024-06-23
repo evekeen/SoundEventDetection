@@ -187,7 +187,7 @@ def _read_train_data_to_memory(train_feature_paths, crop_size, balance_classes=F
         train_index_empty = train_index_empty[:size]
     train_start_indices = np.concatenate((train_index_empty, train_index_with_event))
     np.random.shuffle(train_start_indices)
-
+    train_start_indices = np.array(train_start_indices, dtype=int)
     return train_features, train_event_matrix, train_start_indices
 
 
