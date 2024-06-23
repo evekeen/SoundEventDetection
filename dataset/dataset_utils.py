@@ -84,5 +84,9 @@ def read_multichannel_audio(audio_path, target_fs=None):
         multichannel_audio = np.array(
             [librosa.resample(multichannel_audio[:, i], orig_sr=sample_rate, target_sr=target_fs) for i in range(channels_num)]
         ).T
+        
+    if multichannel_audio.shape[0] < cfg.NFFT:
+        pad_length = cfg.NFFT - multichannel_audio.shape[0]
+        multichannel_audio = np.pad(multichannel_audio, ((0, pad_length), (0, 0)), 'constant')
 
     return multichannel_audio

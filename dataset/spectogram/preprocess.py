@@ -19,10 +19,6 @@ MEL_FILTER_BANK_MATRIX = librosa.filters.mel(
 
 
 def multichannel_stft(multichannel_signal):
-    if multichannel_signal.shape[0] < cfg.NFFT:
-        pad_length = cfg.NFFT - multichannel_signal.shape[0]
-        multichannel_signal = np.pad(multichannel_signal, ((0, pad_length), (0, 0)), 'constant')
-        
     (samples, channels_num) = multichannel_signal.shape
     features = []
     for c in range(channels_num):
