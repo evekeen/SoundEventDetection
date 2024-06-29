@@ -7,6 +7,10 @@ RUN apt-get update && apt-get install -y git curl unzip gcc
 
 WORKDIR /acetrace
 
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+RUN unzip awscliv2.zip
+RUN ./aws/install -i /trex/aws-cli -b /usr/local/bin
+
 COPY requirements.txt .
 
 RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
