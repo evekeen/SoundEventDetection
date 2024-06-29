@@ -13,7 +13,7 @@ matplotlib.use('TkAgg')
 
 def plot_spectogram(audio_path):
     sec_start = 0.0
-    sec_end = 1.00
+    sec_end = 2.00
 
     multichannel_waveform = read_multichannel_audio(audio_path=audio_path, target_fs=cfg.working_sample_rate)
 
