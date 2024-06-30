@@ -77,7 +77,7 @@ def plot_sample_features(input, mode, output=None, target=None, file_name=None, 
         fig.suptitle(f"Sample name: {file_name}")
 
     input = input.mean(0) # Mean over channels
-    if mode.lower() == 'spectogram':
+    if mode.lower() == 'spectrogram':
         from dataset.spectogram.spectogram_configs import frames_per_second
         colorbar = plot_spectogram(axs[0], input, frames_per_second)
         add_colorbar_to_axs(fig, axs[0], colorbar)
