@@ -9,7 +9,7 @@ from models.model_utilities import ConvBlock, init_gru, init_layer, interpolate
 from utils.common import count_parameters, human_format
 
 class DcaseNet_v3(nn.Module):
-    def __init__(self, pool_type='avg', pool_size=(2,2)):
+    def __init__(self, pool_type='avg', pool_size=(2,2), classes=1):
         super().__init__()
 
         #####
@@ -18,7 +18,7 @@ class DcaseNet_v3(nn.Module):
         self.pool_type = pool_type
         self.pool_size = pool_size
         
-        self.conv_block1 = ConvBlock(in_channels=1, out_channels=64)
+        self.conv_block1 = ConvBlock(in_channels=2, out_channels=64)
         self.conv_block2 = ConvBlock(in_channels=64, out_channels=128)
         self.conv_block3 = ConvBlock(in_channels=128, out_channels=256)
         self.conv_block4_1 = ConvBlock(in_channels=256, out_channels=256)
@@ -28,7 +28,7 @@ class DcaseNet_v3(nn.Module):
             num_layers=1, batch_first=True, bidirectional=True)
         self.gru_2 = nn.GRU(input_size=512, hidden_size=128, 
             num_layers=1, batch_first=True, bidirectional=True)
-        self.event_fc = nn.Linear(256, 14, bias=True)
+        self.event_fc = nn.Linear(256, classes, bias=True)
 
         #####
         # Initialize
@@ -72,7 +72,7 @@ class DcaseNet_v3(nn.Module):
         return out_SED
     
     def model_description(self):
-        print(f"\DcaseNet_v3 has {human_format(count_parameters(self))} parameters")
+        print(f"DcaseNet_v3 has {human_format(count_parameters(self))} parameters")
 
 
 if __name__ == '__main__':
