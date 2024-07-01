@@ -6,9 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from models.model_utilities import ConvBlock, init_gru, init_layer, interpolate
-
-def get_DcaseNet_v3(**args):
-    return DcaseNet_v3(**args)
+from utils.common import count_parameters, human_format
 
 class DcaseNet_v3(nn.Module):
     def __init__(self, pool_type='avg', pool_size=(2,2)):
@@ -72,6 +70,9 @@ class DcaseNet_v3(nn.Module):
         out_SED = torch.sigmoid(self.event_fc(out_SED))
         out_SED = out_SED.repeat_interleave(repeats=8, dim=1)
         return out_SED
+    
+    def model_description(self):
+        print(f"\DcaseNet_v3 has {human_format(count_parameters(self))} parameters")
 
 
 if __name__ == '__main__':

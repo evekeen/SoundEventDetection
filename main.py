@@ -3,6 +3,7 @@ import os
 
 import torch
 from torch.utils.data import DataLoader
+from models.DcaseNet import DcaseNet_v3
 from train import train
 from utils.common import WeightedBCE
 
@@ -32,8 +33,9 @@ def get_spectogram_dataset_model_and_criterion(args):
                                        preprocessed_mode=args.preprocess_mode)
 
     # Define the model
-    model = Cnn_AvgPooling(cfg.classes_num, model_config=[(32,2), (64,2), (128,2), (128,1)])
+    # model = Cnn_AvgPooling(cfg.classes_num, model_config=[(32,2), (64,2), (128,2), (128,1)])
     # model = MobileNetV1(cfg.classes_num)
+    model = DcaseNet_v3()
     if args.ckpt != '':
         checkpoint = torch.load(args.ckpt, map_location=device)
         model.load_state_dict(checkpoint['model'])
