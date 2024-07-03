@@ -5,7 +5,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.model_utilities import ConvBlock, init_gru, init_layer, interpolate
+from models.model_utilities import init_gru, init_layer, interpolate
+from models.spectogram_models import ConvBlock
 from utils.common import count_parameters, human_format
 
 class DcaseNet_v3(nn.Module):
@@ -44,9 +45,9 @@ class DcaseNet_v3(nn.Module):
 
         #x: (#bs, #ch, #mel, #seq)
         #forward frame-level
-        x = self.conv_block1(x, self.pool_type, pool_size=self.pool_size)
-        x = self.conv_block2(x, self.pool_type, pool_size=self.pool_size)
-        x = self.conv_block3(x, self.pool_type, pool_size=self.pool_size)
+        x = self.conv_block1(x)
+        x = self.conv_block2(x)
+        x = self.conv_block3(x)
         # x_1 = self.conv_block4_1(x, self.pool_type, pool_size=(2, 2))   #common branch
         # x_2 = self.conv_block4_2(x, self.pool_type, pool_size=(2, 2))   #task specific branch
         #x: (#bs, #filt, #mel, #seq)
