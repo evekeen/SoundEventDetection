@@ -38,7 +38,7 @@ def plot_spectogram(audio_path):
 
     ax = fig.add_subplot(212)
     signal = multichannel_waveform.mean(1)
-    signal = signal[:3000]
+    signal = signal[:2000]
     ax.plot(range(len(signal)), signal)
 
     ax.get_yaxis().set_visible(False)

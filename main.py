@@ -35,7 +35,7 @@ def get_spectogram_dataset_model_and_criterion(args):
     # Define the model
     # model = Cnn_AvgPooling(cfg.classes_num, model_config=[(32,2), (64,2), (128,2), (128,1)])
     # model = MobileNetV1(cfg.classes_num)
-    model = DcaseNet_v3()
+    model = DcaseNet_v3(cfg.classes_num)
     if args.ckpt != '':
         checkpoint = torch.load(args.ckpt, map_location=device)
         model.load_state_dict(checkpoint['model'])

@@ -1,7 +1,7 @@
 
 time_margin = 0.33
 working_sample_rate = 44100
-frame_size = int(working_sample_rate * time_margin * 2)
+frame_size = int(working_sample_rate * 0.2)
 hop_size = frame_size // 2
 audio_channels = 2
 min_event_percentage_in_positive_frame = 0.74
