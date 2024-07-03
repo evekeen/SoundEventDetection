@@ -1,16 +1,19 @@
 import argparse
 import os
+import sys
 import librosa
 import soundfile as sf
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import dataset.spectogram.spectogram_configs as cfg
 
 def find_loud_intervals(file_path, output, visualise=False):
     y, sr = librosa.load(file_path, sr=None, duration=2)
 
     hop_length = int(sr * 0.02)
     frame_length = int(sr * 0.05)
+    print(f'len(y) = {len(y)}')
     energy = np.array([
         sum(abs(y[i:i+frame_length]**2))
         for i in range(0, len(y), hop_length)
@@ -52,7 +55,7 @@ def find_loud_intervals(file_path, output, visualise=False):
         loud_intervals.append((start_time, 1.0))
         
     
-    loud_intervals, load_energies = merge_intervals(loud_intervals, energies)
+    loud_intervals, load_energies = merge_intervals(loud_intervals, energies, sr)
     if not loud_intervals:
         print(f"NOT_DETECTED: {file_path}")
         return None
@@ -87,7 +90,7 @@ def find_loud_intervals(file_path, output, visualise=False):
 
     return loudest_interval
 
-def merge_intervals(intervals, energies):
+def merge_intervals(intervals, energies, sr):
     merged_intervals = []
     merged_energies = []
     merged_interval_energy = 0
@@ -148,9 +151,10 @@ def process_directory(directory):
             df.to_csv(csv_path, index=False)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Example of parser. ')
-    parser.add_argument('--input', type=str, help='file or directory to process.')
-    args = parser.parse_args()
+    input = sys.argv[1]
     
-    process_directory(args.input)
+    if os.path.isdir(input):
+        process_directory(input)
+    else:
+        find_loud_intervals(input, os.path.dirname(input), visualise=True)
     print("CSV file has been created.")
