@@ -60,10 +60,10 @@ def ensure_tau_data(data_dir, fold_name='eval'):
     meta_data_dir = f"{extracted_data_dir}/metadata_{fold_name}"
 
     # Download and extact data
-    if not os.path.exists(zipped_data_dir):
-        print("Downloading zipped data")
-        download_foa_data(zipped_data_dir, fold_name)
     if not os.path.exists(audio_dir):
+        if not os.path.exists(zipped_data_dir):
+            print("Downloading zipped data")
+            download_foa_data(zipped_data_dir, fold_name)
         print("Extracting raw data")
         extract_foa_data(zipped_data_dir, extracted_data_dir, fold_name)
     else:
