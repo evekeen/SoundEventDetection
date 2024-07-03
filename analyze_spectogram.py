@@ -14,6 +14,18 @@ matplotlib.use('TkAgg')
 def plot_spectogram(audio_path):
     sec_start = 0.0
     sec_end = 2.00
+    
+    target_start = 0.0
+    target_end = 0.0
+    
+    cvs_path = audio_path.replace(".wav", ".csv")
+    if os.path.exists(cvs_path):
+        with open(cvs_path, 'r') as f:
+            f.readline()
+            labels = f.readline().split(",")
+            target_start = float(labels[1])
+            target_end = float(labels[2])
+            print(f"Target start: {target_start}, Target end: {target_end}")
 
     multichannel_waveform = read_multichannel_audio(audio_path=audio_path, target_fs=cfg.working_sample_rate)
 
@@ -27,14 +39,17 @@ def plot_spectogram(audio_path):
     print(f"frames: {frames_num}")
     tick_hop = max(1, frames_num // 20)
     xticks = np.concatenate((np.arange(0, frames_num - tick_hop, tick_hop), [frames_num]))
-    xlabels = [f"{x / cfg.frames_per_second:.3f}s" for x in xticks]
+    xlabels = [f"{x / cfg.frames_per_second:.1f}s" for x in xticks]
 
     fig = plt.figure()
+    fig.set_size_inches(10, 8)
     ax = fig.add_subplot(211)
     ax.matshow(feature[0].T, origin='lower', cmap='jet', aspect='auto')
     ax.set_xticks(xticks)
     ax.set_xticklabels(xlabels, rotation='vertical')
     ax.xaxis.set_ticks_position('bottom')
+    if target_end > 0:
+        ax.axvspan(target_start * cfg.frames_per_second, target_end * cfg.frames_per_second, color='b', alpha=0.3)
 
     ax = fig.add_subplot(212)
     signal = multichannel_waveform.mean(1)
@@ -44,6 +59,7 @@ def plot_spectogram(audio_path):
     ax.get_yaxis().set_visible(False)
     plt.autoscale(tight=True)
     plt.show()
+
 
 
 if __name__ == '__main__':
