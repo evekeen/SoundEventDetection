@@ -113,6 +113,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=0.000001)
     parser.add_argument('--num_train_steps', type=int, default=100000)
     parser.add_argument('--log_freq', type=int, default=10000)
+    parser.add_argument('--check_freq', type=int, default=10000)
 
     # Infrastructure
     parser.add_argument('--device', default='cuda:0', type=str)
@@ -135,9 +136,14 @@ if __name__ == '__main__':
     if args.augment_data:
         train_name += "_AD"
 
-    train(model, dataloader, criterion,
-          num_steps=args.num_train_steps,
-          outputs_dir=os.path.join(args.outputs_root, train_name),
-          device=device,
-          lr=args.lr,
-          log_freq=args.log_freq)
+    train(
+        model, 
+        dataloader, 
+        criterion,
+        num_steps=args.num_train_steps,
+        outputs_dir=os.path.join(args.outputs_root, train_name),
+        device=device,
+        lr=args.lr,
+        log_freq=args.log_freq,
+        check_freq=args.check_freq
+    )
