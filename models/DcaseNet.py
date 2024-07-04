@@ -42,10 +42,10 @@ class DcaseNet_v3(nn.Module):
 
         #x: (#bs, #ch, #mel, #seq)
         #forward frame-level
-        x = self.conv_block1(x, self.pool_type, pool_size=self.pool_size)
-        x = self.conv_block2(x, self.pool_type, pool_size=self.pool_size)
-        x = self.conv_block3(x, self.pool_type, pool_size=self.pool_size)
-        x = self.conv_block4_1(x, self.pool_type, pool_size=(2, 2))   #common branch
+        x = self.conv_block1(x)
+        x = self.conv_block2(x)
+        x = self.conv_block3(x)
+        x = self.conv_block4_1(x)   #common branch
         # x_2 = self.conv_block4_2(x, self.pool_type, pool_size=(2, 2))   #task specific branch
         #x: (#bs, #filt, #mel, #seq)
 
