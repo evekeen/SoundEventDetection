@@ -85,7 +85,7 @@ class SpectogramDataset(Dataset):
             # features, event_matrix = self.augment_shift_spectrogram(features, event_matrix, range=(0, 3 * cfg.frames_per_second))
 
         # Transform data
-        features = self.transform(features)
+        # features = self.transform(features)
 
         return torch.from_numpy(features), torch.from_numpy(event_matrix)
 
@@ -181,7 +181,8 @@ def _read_train_data_to_memory(train_feature_paths, crop_size, balance_classes=F
             end_gap = max(feature.shape[1] - event_end_index - 5, 0)
             shift = np.random.randint(-start_gap, end_gap)
             feature, event_matrix = augment_shift_spectrogram(feature, event_matrix, shift)
-            print("Augmented with shift: ", shift)
+            
+        feature = multichannel_complex_to_log_mel(feature)
 
         # Append data
         train_features_list.append(feature)
