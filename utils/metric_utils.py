@@ -18,7 +18,6 @@ def calculate_metrics(output, target):
     # from sklearn.metrics import average_precision_score
     # AP = average_precision_score(T.reshape(-1).astype(int), O.reshape(-1))
     AP = np.sum(precisions[:-1] * (recals[:-1] - recals[1:]))
-    print(f"AP: {AP}")
     return recals, precisions, AP
 
 

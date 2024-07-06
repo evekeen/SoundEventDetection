@@ -114,6 +114,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_train_steps', type=int, default=100000)
     parser.add_argument('--log_freq', type=int, default=300)
     parser.add_argument('--check_freq', type=int, default=1000)
+    parser.add_argument('--sample_freq', type=int, default=1000)
 
     # Infrastructure
     parser.add_argument('--device', default='cuda:0', type=str)
@@ -145,5 +146,6 @@ if __name__ == '__main__':
         device=device,
         lr=args.lr,
         log_freq=args.log_freq,
-        check_freq=args.check_freq
+        check_freq=args.check_freq,
+        sample_freq=args.sample_freq
     )

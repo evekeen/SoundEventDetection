@@ -9,7 +9,7 @@ from time import time
 import numpy as np
 
 
-def eval(model, dataloader, criterion, outputs_dir, iteration, device, limit_val_samples=None):
+def eval(model, dataloader, criterion, outputs_dir, iteration, device, limit_val_samples=None, plot_samples=False):
     losses = []
     recal_sets, precision_sets, APs = [], [], []
     debug_outputs = []
@@ -56,25 +56,26 @@ def eval(model, dataloader, criterion, outputs_dir, iteration, device, limit_val
         debug_targets.append(target)
         debug_file_names.append(file_name)
 
-    # plot input, outputs and targets of worst and best samples by each metric
-    for (metric_name, values, named_indices) in [
-                                        ("loss", losses, [('worst', -1), ('2-worst', -2), ('3-worst', -3), ('best', 0)]),
-                                        ('AP', APs, [('worst', 0), ('best', -1)])]:
-        indices = np.argsort(values)
-        for (name, idx) in named_indices:
-            val_sample_idx = indices[idx]
-            plot_sample_features(debug_inputs[val_sample_idx],
-                                 mode=mode,
-                                 output=debug_outputs[val_sample_idx],
-                                 target=debug_targets[val_sample_idx],
-                                 file_name=debug_file_names[val_sample_idx] + f" {metric_name} {values[val_sample_idx]:.2f}",
-                                 plot_path=os.path.join(outputs_dir, 'images', f"Iter-{iteration}",
-                                                    f"{metric_name}-{name}.png"))
+    if plot_samples:
+        # plot input, outputs and targets of worst and best samples by each metric
+        for (metric_name, values, named_indices) in [
+                                            ("loss", losses, [('worst', -1), ('2-worst', -2), ('3-worst', -3), ('best', 0)]),
+                                            ('AP', APs, [('worst', 0), ('best', -1)])]:
+            indices = np.argsort(values)
+            for (name, idx) in named_indices:
+                val_sample_idx = indices[idx]
+                plot_sample_features(debug_inputs[val_sample_idx],
+                                    mode=mode,
+                                    output=debug_outputs[val_sample_idx],
+                                    target=debug_targets[val_sample_idx],
+                                    file_name=debug_file_names[val_sample_idx] + f" {metric_name} {values[val_sample_idx]:.2f}",
+                                    plot_path=os.path.join(outputs_dir, 'images', f"Iter-{iteration}",
+                                                        f"{metric_name}-{name}.png"))
 
     return losses, recal_sets, precision_sets, APs
 
 
-def train(model, data_loader, criterion, num_steps, lr, log_freq, check_freq, outputs_dir, device):
+def train(model, data_loader, criterion, num_steps, lr, log_freq, check_freq, sample_freq, outputs_dir, device):
     print("Training:")
     print("\t- Using device: ", device)
     lr_decay_freq = 200
@@ -116,7 +117,8 @@ def train(model, data_loader, criterion, num_steps, lr, log_freq, check_freq, ou
                     f"epoch: {epoch}, step: {iterations}, loss: {loss.item():.2f}, im/sec: {im_sec:.1f}, lr: {optimizer.param_groups[0]['lr']:.8f}")
 
                 val_losses, recal_sets, precision_sets, APs = eval(model, data_loader, criterion, outputs_dir, iteration=iterations,
-                                                                   device=device, limit_val_samples=10)
+                                                                   device=device, limit_val_samples=30, sample_freq=sample_freq)
+                print('AP: ', APs.mean())
 
                 plotter.report_validation_metrics(val_losses, recal_sets, precision_sets, APs, iterations)
                 plotter.plot(outputs_dir)
