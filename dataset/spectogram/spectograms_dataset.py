@@ -41,9 +41,12 @@ class SpectogramDataset(Dataset):
         all_paths = [os.path.join(features_and_labels_dir, x) for x in os.listdir(features_and_labels_dir)]
         train_feature_paths, self.val_feature_paths = split_train_val(all_paths, val_descriptor)
 
-        self.train_features, self.train_event_matrix, self.train_start_indices = _read_train_data_to_memory(train_feature_paths,
+        self.train_features, self.train_event_matrix = None, None
+
+        self._train_features, self._train_event_matrix, self.train_start_indices = _read_train_data_to_memory(train_feature_paths,
                                                                                                             cfg.train_crop_size,
                                                                                                             balance_classes)
+        self.augment_and_preprocess_mel()
 
         self.val_features_list, self.val_event_matrix_list = _read_validation_data_to_memory(self.val_feature_paths)
 
@@ -51,6 +54,29 @@ class SpectogramDataset(Dataset):
               f"totaling {len(self.train_event_matrix) / cfg.frames_per_second:.1f} seconds "
               f"and {len(self.val_feature_paths)} val samples "
               f"totaling {len(np.concatenate(self.val_event_matrix_list, axis=0)) / cfg.frames_per_second:.1f} seconds")
+        
+    def augment_and_preprocess_mel(self):
+        print("Augmenting and preprocessing data")
+        train_features_list = []
+        train_event_matrix_list = []
+        for i in range(len(self.train_start_indices)):
+            data_indexes = np.arange(self.train_crop_size) + self.train_start_indices[i]
+            features = self._train_features[:, data_indexes]
+            event_matrix = self._train_event_matrix[data_indexes]
+
+            if self.augment_data:
+                # features, event_matrix = self.augment_add_noise(features, event_matrix)
+                features, event_matrix = self.augment_shift_spectrogram(features, event_matrix, range=(0, 3 * cfg.frames_per_second))
+                # features, event_matrix = self.augment_mix_samples(features, event_matrix)
+
+            features = self.transform(features)
+
+            train_features_list.append(features)
+            train_event_matrix_list.append(event_matrix)
+            
+        self.train_features = np.concatenate(train_features_list, axis=1)
+        self.train_event_matrix = np.concatenate(train_event_matrix_list, axis=0)
+        
 
     def __len__(self):
         return len(self.train_start_indices)
@@ -69,13 +95,13 @@ class SpectogramDataset(Dataset):
         features = self.train_features[:, data_indexes]
         event_matrix = self.train_event_matrix[data_indexes]
 
-        if self.augment_data:
+        # if self.augment_data:
             # feature, event_matrix = self.augment_mix_samples(features, event_matrix)
             # feature, event_matrix = self.augment_add_noise(feature, event_matrix)
-            features, event_matrix = self.augment_shift_spectrogram(features, event_matrix, range=(0, 3 * cfg.frames_per_second))
+            # features, event_matrix = self.augment_shift_spectrogram(features, event_matrix, range=(0, 3 * cfg.frames_per_second))
 
         # Transform data
-        features = self.transform(features)
+        # features = self.transform(features)
 
         return torch.from_numpy(features), torch.from_numpy(event_matrix)
 

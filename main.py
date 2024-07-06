@@ -147,5 +147,6 @@ if __name__ == '__main__':
         lr=args.lr,
         log_freq=args.log_freq,
         check_freq=args.check_freq,
-        sample_freq=args.sample_freq
+        sample_freq=args.sample_freq,
+        on_augment=lambda: dataset.augment_and_preprocess_mel()
     )

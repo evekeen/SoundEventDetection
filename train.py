@@ -75,7 +75,7 @@ def eval(model, dataloader, criterion, outputs_dir, iteration, device, limit_val
     return losses, recal_sets, precision_sets, APs
 
 
-def train(model, data_loader, criterion, num_steps, lr, log_freq, check_freq, sample_freq, outputs_dir, device):
+def train(model, data_loader, criterion, num_steps, lr, log_freq, check_freq, sample_freq, on_augment, outputs_dir, device):
     print("Training:")
     print("\t- Using device: ", device)
     lr_decay_freq = 200
@@ -135,3 +135,5 @@ def train(model, data_loader, criterion, num_steps, lr, log_freq, check_freq, sa
             if iterations == num_steps:
                 break
         epoch += 1
+        if epoch % 50 == 0:
+            on_augment()
