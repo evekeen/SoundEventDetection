@@ -32,6 +32,7 @@ class SpectogramDataset(Dataset):
         self.preprocessed_mode = preprocessed_mode
         self.augment_data = augment_data
         self.train_crop_size = cfg.train_crop_size
+        self.balance_classes = balance_classes
 
         # Load data mean and std
         d = pickle.load(open(mean_std_file, 'rb'))
@@ -39,43 +40,26 @@ class SpectogramDataset(Dataset):
         self.std = d['std']
 
         all_paths = [os.path.join(features_and_labels_dir, x) for x in os.listdir(features_and_labels_dir)]
-        train_feature_paths, self.val_feature_paths = split_train_val(all_paths, val_descriptor)
+        self.train_feature_paths, self.val_feature_paths = split_train_val(all_paths, val_descriptor)
 
-        self.train_features, self.train_event_matrix = None, None
-
-        self._train_features, self._train_event_matrix, self.train_start_indices = _read_train_data_to_memory(train_feature_paths,
+        self.train_features, self.train_event_matrix, self.train_start_indices = _read_train_data_to_memory(self.train_feature_paths,
                                                                                                             cfg.train_crop_size,
-                                                                                                            balance_classes)
-        self.augment_and_preprocess_mel()
-
+                                                                                                            self.balance_classes)
         self.val_features_list, self.val_event_matrix_list = _read_validation_data_to_memory(self.val_feature_paths)
 
-        print(f"Data generator initiated with {len(train_feature_paths)} train samples "
+        print(f"Data generator initiated with {len(self.train_feature_paths)} train samples "
               f"totaling {len(self.train_event_matrix) / cfg.frames_per_second:.1f} seconds "
               f"and {len(self.val_feature_paths)} val samples "
               f"totaling {len(np.concatenate(self.val_event_matrix_list, axis=0)) / cfg.frames_per_second:.1f} seconds")
         
     def augment_and_preprocess_mel(self):
         print("Augmenting and preprocessing data")
-        train_features_list = []
-        train_event_matrix_list = []
-        for i in range(len(self.train_start_indices)):
-            data_indexes = np.arange(self.train_crop_size) + self.train_start_indices[i]
-            features = self._train_features[:, data_indexes]
-            event_matrix = self._train_event_matrix[data_indexes]
-
-            if self.augment_data:
-                # features, event_matrix = self.augment_add_noise(features, event_matrix)
-                features, event_matrix = self.augment_shift_spectrogram(features, event_matrix, range=(0, 3 * cfg.frames_per_second))
-                # features, event_matrix = self.augment_mix_samples(features, event_matrix)
-
-            features = self.transform(features)
-
-            train_features_list.append(features)
-            train_event_matrix_list.append(event_matrix)
-            
-        self.train_features = np.concatenate(train_features_list, axis=1)
-        self.train_event_matrix = np.concatenate(train_event_matrix_list, axis=0)
+        self.train_features, self.train_event_matrix, self.train_start_indices = _read_train_data_to_memory(
+            self.train_feature_paths,
+            cfg.train_crop_size,
+            self.balance_classes
+        )
+        
         
 
     def __len__(self):
@@ -101,7 +85,7 @@ class SpectogramDataset(Dataset):
             # features, event_matrix = self.augment_shift_spectrogram(features, event_matrix, range=(0, 3 * cfg.frames_per_second))
 
         # Transform data
-        # features = self.transform(features)
+        features = self.transform(features)
 
         return torch.from_numpy(features), torch.from_numpy(event_matrix)
 
@@ -137,14 +121,6 @@ class SpectogramDataset(Dataset):
         else:  # If the preprocessed spectograms are saved as raw complex spectograms transform them into logMel
             return multichannel_complex_to_log_mel(x)
         
-    def augment_shift_spectrogram(self, feature, event_matrix, range=(-cfg.frames_per_second, cfg.frames_per_second)):
-        """
-        Shift the spectogram in time
-        """
-        shift = np.random.randint(range[0], range[1])
-        feature = np.roll(feature, shift, axis=1)
-        event_matrix = np.roll(event_matrix, shift, axis=0)
-        return feature, event_matrix
 
     def augment_add_noise(self, batch_feature, batch_event_matrix):
         # TODO these number are fit to noise added to waveform and not spectogram
@@ -172,7 +148,7 @@ class SpectogramDataset(Dataset):
         return feature, event_matrix
 
 
-def _read_train_data_to_memory(train_feature_paths, crop_size, balance_classes=False):
+def _read_train_data_to_memory(train_feature_paths, crop_size, balance_classes=False, augment=True):
     """
     Creates a list with all spectograms conatenated to each other so that one can sample random crops over them by choosing
     from a set of start indices.
@@ -196,6 +172,16 @@ def _read_train_data_to_memory(train_feature_paths, crop_size, balance_classes=F
 
         possible_start_indices = np.arange(frame_index, frame_index + frames_num - crop_size)
         frame_index += frames_num
+        
+        event_indices = np.where(event_matrix > 0)[0]
+        if augment and len(event_indices) > 0:
+            event_start_index = event_indices[0]
+            event_end_index = np.where(event_matrix > 0)[0][-1]
+            start_gap = max(event_start_index - 1, 0)
+            end_gap = max(feature.shape[1] - event_end_index - 5, 0)
+            shift = np.random.randint(-start_gap, end_gap)
+            feature, event_matrix = augment_shift_spectrogram(feature, event_matrix, shift)
+            print("Augmented with shift: ", shift)
 
         # Append data
         train_features_list.append(feature)
@@ -222,6 +208,15 @@ def _read_train_data_to_memory(train_feature_paths, crop_size, balance_classes=F
     np.random.shuffle(train_start_indices)
     train_start_indices = np.array(train_start_indices, dtype=int)
     return train_features, train_event_matrix, train_start_indices
+
+
+def augment_shift_spectrogram(feature, event_matrix, shift):
+        """
+        Shift the spectogram in time
+        """
+        feature = np.roll(feature, shift, axis=1)
+        event_matrix = np.roll(event_matrix, shift, axis=0)
+        return feature, event_matrix
 
 
 def _read_validation_data_to_memory(feature_paths):
