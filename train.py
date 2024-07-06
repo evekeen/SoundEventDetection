@@ -111,13 +111,14 @@ def train(model, data_loader, criterion, num_steps, lr, log_freq, check_freq, sa
                 for param_group in optimizer.param_groups:
                     param_group['lr'] *= 0.997
 
+            plot_samples = iterations % sample_freq == 0
             if iterations % log_freq == 0:
                 im_sec = iterations * data_loader.batch_size / (time() - training_start_time)
                 tqdm_bar.set_description(
                     f"epoch: {epoch}, step: {iterations}, loss: {loss.item():.2f}, im/sec: {im_sec:.1f}, lr: {optimizer.param_groups[0]['lr']:.8f}")
 
                 val_losses, recal_sets, precision_sets, APs = eval(model, data_loader, criterion, outputs_dir, iteration=iterations,
-                                                                   device=device, limit_val_samples=30, sample_freq=sample_freq)
+                                                                   device=device, limit_val_samples=30, plot_samples=plot_samples)
                 print('AP: ', APs.mean())
 
                 plotter.report_validation_metrics(val_losses, recal_sets, precision_sets, APs, iterations)
