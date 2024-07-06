@@ -13,7 +13,8 @@ import dataset.spectogram.spectogram_configs as cfg
 from models.DcaseNet import DcaseNet_v3
 
 def find_loud_intervals(file_path, output, detected, visualise=False):
-    y, sr = librosa.load(file_path, sr=None, duration=2)
+    max_time = 8.0
+    y, sr = librosa.load(file_path, sr=None, duration=max_time)
 
     hop_length = int(sr * 0.02)
     frame_length = int(sr * 0.05)
@@ -26,7 +27,7 @@ def find_loud_intervals(file_path, output, detected, visualise=False):
         print(f"NO_AUDIO: {file_path}")
         return None
 
-    max_time = 2.0
+
     energy = energy[:int(max_time * sr / hop_length)]
     energy = energy / np.max(energy)
     avg_energy = np.mean(energy)
@@ -55,7 +56,7 @@ def find_loud_intervals(file_path, output, detected, visualise=False):
             start_time = None
 
     if start_time is not None:
-        loud_intervals.append((start_time, 1.0))
+        loud_intervals.append((start_time, max_time))
     
     intersected_indices = []
     for i, interval in enumerate(loud_intervals):
