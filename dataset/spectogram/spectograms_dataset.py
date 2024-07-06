@@ -72,7 +72,7 @@ class SpectogramDataset(Dataset):
         if self.augment_data:
             # feature, event_matrix = self.augment_mix_samples(features, event_matrix)
             # feature, event_matrix = self.augment_add_noise(feature, event_matrix)
-            features, event_matrix = self.augment_shift_spectrogram(features, event_matrix, range=(-cfg.frames_per_second / 2, 3 * cfg.frames_per_second))
+            features, event_matrix = self.augment_shift_spectrogram(features, event_matrix, range=(0, 5 * cfg.frames_per_second))
 
         # Transform data
         # features = self.transform(features)
