@@ -58,7 +58,7 @@ class ProgressPlotter:
     def plot(self, outputs_dir):
         self.plot_train_eval_losses(os.path.join(outputs_dir, 'Training_loss.png'))
         self.plot_metrics(os.path.join(outputs_dir, 'Metrics.png'))
-        self.plot_roc(os.path.join(outputs_dir, 'ROC_plots', f"Roc-iteration-{self.iterations[-1]}.png"))
+        # self.plot_roc(os.path.join(outputs_dir, 'ROC_plots', f"Roc-iteration-{self.iterations[-1]}.png"))
 
     def plot_train_eval_losses(self, plot_path):
         self.train_avgs += [np.mean(self.train_buffer)]
