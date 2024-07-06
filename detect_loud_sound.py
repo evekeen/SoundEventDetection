@@ -6,9 +6,13 @@ import soundfile as sf
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import torch
+from dataset.dataset_utils import read_multichannel_audio
+from dataset.spectogram.preprocess import multichannel_complex_to_log_mel, multichannel_stft
 import dataset.spectogram.spectogram_configs as cfg
+from models.DcaseNet import DcaseNet_v3
 
-def find_loud_intervals(file_path, output, visualise=False):
+def find_loud_intervals(file_path, output, detected, visualise=False):
     y, sr = librosa.load(file_path, sr=None, duration=2)
 
     hop_length = int(sr * 0.02)
@@ -52,13 +56,19 @@ def find_loud_intervals(file_path, output, visualise=False):
 
     if start_time is not None:
         loud_intervals.append((start_time, 1.0))
-        
     
-    loud_intervals, load_energies = loud_intervals, energies
+    intersected_indices = []
+    for i, interval in enumerate(loud_intervals):
+        if has_intersection(interval, detected):
+            intersected_indices.append(i)
+            
+    loud_intervals = [loud_intervals[i] for i in intersected_indices]
+    loud_energies = [energies[i] for i in intersected_indices]
+    
     if not loud_intervals:
         print(f"NOT_DETECTED: {file_path}")
         return None
-    loudest_interval_index = np.argmax(load_energies)
+    loudest_interval_index = np.argmax(loud_energies)
     loudest_interval = loud_intervals[loudest_interval_index]
     print("Loudest Interval:", loudest_interval)
     
@@ -88,6 +98,39 @@ def find_loud_intervals(file_path, output, visualise=False):
         plt.show()
 
     return loudest_interval
+
+
+def detect_impact_regions(model, audio_file):
+    multichannel_audio = read_multichannel_audio(audio_path=audio_file, target_fs=cfg.working_sample_rate)
+    log_mel_features = multichannel_complex_to_log_mel(multichannel_stft(multichannel_audio))
+    
+    with torch.no_grad():
+        input = torch.from_numpy(log_mel_features).to(torch.float32).to('cpu')
+        output_event = model(input.unsqueeze(0))
+    output_event = output_event.cpu()
+    time_intervals = []
+    step = cfg.frame_size - cfg.hop_size
+    for i, frame_value in enumerate(output_event[0]):
+        if frame_value > 0.1:
+            start_time = i * step / cfg.working_sample_rate
+            end_time = start_time + cfg.frame_size / cfg.working_sample_rate
+            time_intervals.append((start_time, end_time))
+            
+    merged = []
+    for interval in time_intervals:
+        if not merged:
+            merged.append(interval)
+        else:
+            prev_start, prev_end = merged[-1]
+            start, end = interval
+            if start <= prev_end:
+                merged[-1] = (prev_start, end)
+            else:
+                merged.append(interval)
+    return merged
+
+def has_intersection(interval, intervals):
+    return any([interval[0] <= end and interval[1] >= start for start, end in intervals])
 
 def merge_intervals(intervals, energies, sr):
     merged_intervals = []
@@ -135,12 +178,17 @@ def process_directory(directory):
     csv_output = os.path.join(output, 'csv')
     os.makedirs(csv_output, exist_ok=True)
     
+    model = DcaseNet_v3(1).to('cpu')
+    checkpoint = torch.load('/Users/ivkin/git/SoundEventDetection-Pytorch/networks/dcasenet-layers-3/iteration_10000.pth', map_location='cpu')
+    model.load_state_dict(checkpoint['model'])
+    
     files = os.listdir(directory)
     files.sort()
     for file in files:
         if file.endswith(".wav"):
             file_path = os.path.join(directory, file)
-            interval = find_loud_intervals(file_path, output)
+            detected = detect_impact_regions(model, file_path)
+            interval = find_loud_intervals(file_path, output, detected)
             if interval is None:
                 continue
             (start_time, end_time) = interval
