@@ -13,7 +13,6 @@ def find_loud_intervals(file_path, output, visualise=False):
 
     hop_length = int(sr * 0.02)
     frame_length = int(sr * 0.05)
-    print(f'len(y) = {len(y)}')
     energy = np.array([
         sum(abs(y[i:i+frame_length]**2))
         for i in range(0, len(y), hop_length)
@@ -55,7 +54,7 @@ def find_loud_intervals(file_path, output, visualise=False):
         loud_intervals.append((start_time, 1.0))
         
     
-    loud_intervals, load_energies = merge_intervals(loud_intervals, energies, sr)
+    loud_intervals, load_energies = loud_intervals, energies
     if not loud_intervals:
         print(f"NOT_DETECTED: {file_path}")
         return None
