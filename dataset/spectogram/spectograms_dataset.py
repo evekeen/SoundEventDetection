@@ -75,7 +75,7 @@ class SpectogramDataset(Dataset):
             features, event_matrix = self.augment_shift_spectrogram(features, event_matrix, range=(0, 3 * cfg.frames_per_second))
 
         # Transform data
-        # features = self.transform(features)
+        features = self.transform(features)
 
         return torch.from_numpy(features), torch.from_numpy(event_matrix)
 
