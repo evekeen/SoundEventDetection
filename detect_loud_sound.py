@@ -112,7 +112,7 @@ def detect_impact_regions(model, audio_file):
     time_intervals = []
     step = cfg.frame_size - cfg.hop_size
     for i, frame_value in enumerate(output_event[0]):
-        if frame_value > 0.1:
+        if frame_value > 0.3:
             start_time = i * step / cfg.working_sample_rate
             end_time = start_time + cfg.frame_size / cfg.working_sample_rate
             time_intervals.append((start_time, end_time))
@@ -180,7 +180,7 @@ def process_directory(directory):
     os.makedirs(csv_output, exist_ok=True)
     
     model = DcaseNet_v3(1).to('cpu')
-    checkpoint = torch.load('/Users/ivkin/git/SoundEventDetection-Pytorch/networks/dcasenet-layers-3/iteration_10000.pth', map_location='cpu')
+    checkpoint = torch.load('/Users/ivkin/git/SoundEventDetection-Pytorch/networks/dcasenet_fixed_order/iteration_5000.pth', map_location='cpu')
     model.load_state_dict(checkpoint['model'])
     
     files = os.listdir(directory)
