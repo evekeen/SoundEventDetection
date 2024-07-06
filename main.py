@@ -93,7 +93,7 @@ if __name__ == '__main__':
     parser.add_argument('--train_features', type=str, default='Spectogram', help='Spectogram or Waveform')
 
     # Spectogram only arguments
-    parser.add_argument('--preprocess_mode', type=str, default='logMel', help='logMel or Complex; relevant only for Spectogram features')
+    parser.add_argument('--preprocess_mode', type=str, default='Complex', help='logMel or Complex; relevant only for Spectogram features')
     parser.add_argument('--force_preprocess', action='store_true', default=False, help='relevant only for Spectogram features')
 
     # Train
