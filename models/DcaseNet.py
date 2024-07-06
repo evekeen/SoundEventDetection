@@ -25,8 +25,8 @@ class DcaseNet_v3(nn.Module):
         # self.conv_block4_1 = ConvBlock(in_channels=256, out_channels=256)
         # self.conv_block4_2 = ConvBlock(in_channels=256, out_channels=256)
 
-        self.gru_2 = nn.GRU(input_size=128, hidden_size=128, num_layers=1, batch_first=True, bidirectional=True)
-        self.event_fc = nn.Linear(256, class_num, bias=True)
+        self.gru_2 = nn.GRU(input_size=128, hidden_size=64, num_layers=1, batch_first=True, bidirectional=True)
+        self.event_fc = nn.Linear(128, class_num, bias=True)
 
         #####
         # Initialize
