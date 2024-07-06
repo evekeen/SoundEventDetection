@@ -39,6 +39,8 @@ class DcaseNet_v3(nn.Module):
 
     def forward(self, x):
         d_return = {}   # dictionary to return
+        #x: (#bs, #ch, #seq, #mel)
+        x = x.transpose(2, 3)
 
         #x: (#bs, #ch, #mel, #seq)
         #forward frame-level
