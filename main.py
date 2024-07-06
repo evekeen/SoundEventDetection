@@ -113,7 +113,7 @@ if __name__ == '__main__':
     parser.add_argument('--lr', type=float, default=0.000001)
     parser.add_argument('--num_train_steps', type=int, default=100000)
     parser.add_argument('--log_freq', type=int, default=300)
-    parser.add_argument('--check_freq', type=int, default=1000)
+    parser.add_argument('--check_freq', type=int, default=500)
     parser.add_argument('--sample_freq', type=int, default=1000)
 
     # Infrastructure
