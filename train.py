@@ -135,4 +135,5 @@ def train(model, data_loader, criterion, num_steps, lr, log_freq, check_freq, sa
             if iterations == num_steps:
                 break
         epoch += 1
-        on_augment()
+        if epoch % 10 == 0:
+            on_augment()
