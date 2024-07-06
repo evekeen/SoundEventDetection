@@ -28,7 +28,7 @@ class SpectogramDataset(Dataset):
             preprocessed_mode: defines whether if the preprocess phase included converting to LogMel or only STFT
         """
         assert preprocessed_mode in ['logMel', 'Complex'], "Spectogram type should be either logmel or complex"
-        assert not (preprocessed_mode == 'logMel' and augment_data), "Can't perform augmentation in logMel spectograms"
+        # assert not (preprocessed_mode == 'logMel' and augment_data), "Can't perform augmentation in logMel spectograms"
         self.preprocessed_mode = preprocessed_mode
         self.augment_data = augment_data
         self.train_crop_size = cfg.train_crop_size
@@ -70,11 +70,12 @@ class SpectogramDataset(Dataset):
         event_matrix = self.train_event_matrix[data_indexes]
 
         if self.augment_data:
-            feature, event_matrix = self.augment_mix_samples(features, event_matrix)
-            feature, event_matrix = self.augment_add_noise(feature, event_matrix)
+            # feature, event_matrix = self.augment_mix_samples(features, event_matrix)
+            # feature, event_matrix = self.augment_add_noise(feature, event_matrix)
+            features, event_matrix = self.augment_shift_spectrogram(features, event_matrix, range=(-cfg.frames_per_second / 2, 3 * cfg.frames_per_second))
 
         # Transform data
-        features = self.transform(features)
+        # features = self.transform(features)
 
         return torch.from_numpy(features), torch.from_numpy(event_matrix)
 
@@ -109,6 +110,15 @@ class SpectogramDataset(Dataset):
             return x
         else:  # If the preprocessed spectograms are saved as raw complex spectograms transform them into logMel
             return multichannel_complex_to_log_mel(x)
+        
+    def augment_shift_spectrogram(self, feature, event_matrix, range=(-cfg.frames_per_second, cfg.frames_per_second)):
+        """
+        Shift the spectogram in time
+        """
+        shift = np.random.randint(range[0], range[1])
+        feature = np.roll(feature, shift, axis=1)
+        event_matrix = np.roll(event_matrix, shift, axis=0)
+        return feature, event_matrix
 
     def augment_add_noise(self, batch_feature, batch_event_matrix):
         # TODO these number are fit to noise added to waveform and not spectogram

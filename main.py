@@ -87,7 +87,7 @@ def get_dataset_and_model(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Example of parser. ')
 
-    # Traininng
+    # Traininng'
     parser.add_argument('--dataset_dir', type=str, default='data', help='Directory of dataset.')
     parser.add_argument('--dataset_name', type=str, default='TAU', help='FilmClap or TAU')
     parser.add_argument('--train_features', type=str, default='Spectogram', help='Spectogram or Waveform')
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     parser.add_argument('--train_tag', type=str, default='')
 
     # Training tricks
-    parser.add_argument('--augment_data', action='store_true', default=False)
+    parser.add_argument('--augment_data', action='store_true', default=True)
     parser.add_argument('--balance_classes', action='store_true', default=False,
                         help='Whether to make sure there is same number of samples with and without events')
     parser.add_argument('--recall_priority', type=float, default=5, help='priority factor for the bce loss')
