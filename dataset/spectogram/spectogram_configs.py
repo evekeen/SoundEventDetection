@@ -7,7 +7,7 @@ mel_bins = 64                                # How much frames to stretch over t
 mel_min_freq = 20                            # Hz first mel bin (minimal possible value 0)
 mel_max_freq = working_sample_rate // 2      # Hz last mel bin (maximal possible value sampling_rate / 2)
 
-train_crop_size = frames_per_second * 4  # 4-second log mel spectrogram as input
+train_crop_size = frames_per_second * 5  # 5-second log mel spectrogram as input
 
 
 cfg_descriptor = f"Spectogram_SaR-{human_format(working_sample_rate)}_FrS-{human_format(frame_size)}" \
