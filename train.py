@@ -123,8 +123,7 @@ def train(model, data_loader, criterion, num_steps, lr, log_freq, check_freq, sa
 
                 plotter.report_validation_metrics(val_losses, recal_sets, precision_sets, APs, iterations)
                 plotter.plot(outputs_dir)
-
-            if iterations % check_freq == 0:
+                
                 checkpoint = {
                     'iterations': iterations,
                     'model': model.state_dict(),
