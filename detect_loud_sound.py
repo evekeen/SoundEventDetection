@@ -25,7 +25,7 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
     hop_length = int(sr * 0.02)
     frame_length = int(sr * 0.05)
     energy = np.array([
-        sum(abs(y[i:i+frame_length]**2))
+        max(y[i:i+frame_length]**2)
         for i in range(0, len(y), hop_length)
     ])
     
@@ -35,57 +35,27 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
 
 
     energy = energy[:int(max_time * sr / hop_length)]
-    energy = energy / np.max(energy)
-    avg_energy = np.mean(energy)
-    threshold = avg_energy * 1.5
-
-    loud_intervals = []
-    energies = []
-    start_time = None
-    prev_end_time = None
-    interval_energy = 0
-    for i, e in enumerate(energy):
-        if e > threshold and start_time is None:
-            start_time = i * hop_length / sr
-        elif e <= threshold and start_time is not None:
-            end_time = i * hop_length / sr
-            if prev_end_time is not None and start_time - prev_end_time <= 1.0 / sr:
-                start_time = prev_start_time
-            if i + 2 < len(energy) and energy[i+1] > threshold and energy[i+2] > threshold:
-                continue
-            loud_intervals.append((start_time, end_time))
-            interval_energy = interval_energy + e
-            interval_energy /= (end_time - start_time)
-            energies.append(interval_energy)
-            interval_energy = 0
-            prev_start_time = start_time
-            prev_end_time = end_time
-            start_time = None
-
-    if start_time is not None:
-        loud_intervals.append((start_time, max_time))
-        energies.append(interval_energy)
     
-    longer_interval_indexes = [i for i, interval in enumerate(loud_intervals) if interval[1] - interval[0] > 0.05 and interval[1] - interval[0] < 0.1]
+    max_energy_index = np.argmax(energy)
+    frame_start = max_energy_index * hop_length / sr
+    frame_end = (max_energy_index + 1) * hop_length / sr
+    loud_intervals = [(frame_start, frame_end)]
+    
     if detected:
         for i, interval in enumerate(loud_intervals):
             if has_intersection(interval, detected):
                 selected_indices.append(i)
     else:
-        selected_indices = longer_interval_indexes
+        selected_indices = [0]
                 
     loud_intervals = [loud_intervals[i] for i in selected_indices]
-    loud_energies = [energies[i] for i in selected_indices]
     
     if not loud_intervals:
         print(f"NOT_DETECTED: {file_path}")
         return None
-    print(loud_energies[:4])
     print(loud_intervals[:4])
-    loudest_interval_index = np.argmax(loud_energies[:4])
-    print(loudest_interval_index)
-    loudest_interval = loud_intervals[loudest_interval_index]
-    loudest_interval = (loudest_interval[0] - hop_length / sr, loudest_interval[1] + hop_length / sr)
+    loudest_interval = loud_intervals[0]
+    loudest_interval = (loudest_interval[0] - hop_length * 2 / sr, loudest_interval[1] + hop_length * 2 / sr)
     print("Extended Interval:", loudest_interval)
     
     def do_visualise():
@@ -97,10 +67,8 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
         def update_plot():
             plot1 = fig.add_subplot(111)
             plot1.plot(energy)
-            plot1.axhline(y=avg_energy, color='r', linestyle='--', label='Average Energy')
             plot1.set_xticks(np.arange(0, len(energy), sr/hop_length))
             plot1.set_xticks(np.arange(0, len(energy), sr/hop_length/10), minor=True)
-            plot1.legend()
             plot1.axvspan(loudest_interval[0] * sr / hop_length, loudest_interval[1] * sr / hop_length, color='r', alpha=0.5)        
         
         update_plot()
