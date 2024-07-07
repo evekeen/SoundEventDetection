@@ -86,24 +86,23 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
         nonlocal loudest_interval
         window = tk.Tk()
         window.title("Loudest Interval Selection")
+        fig = Figure(figsize = (10, 5), dpi = 100)
         
-        def plot():
-            fig = Figure(figsize=(10, 5))
+        def update_plot():
             plot1 = fig.add_subplot(111)
             plot1.plot(energy)
             plot1.axhline(y=avg_energy, color='r', linestyle='--', label='Average Energy')
+            plot1.set_xticks(np.arange(0, len(energy), sr/hop_length))
+            plot1.set_xticks(np.arange(0, len(energy), sr/hop_length/10), minor=True)
             plot1.legend()
-                
-            longest_start_time, longest_end_time = loudest_interval
-            longest_start_frame = int(longest_start_time * sr / hop_length)
-            longest_end_frame = int(longest_end_time * sr / hop_length)
-            plot1.axvspan(longest_start_frame, longest_end_frame, color='r', alpha=0.5)        
-            
-            canvas = FigureCanvasTkAgg(fig, master = window)   
-            canvas.draw() 
-            canvas.get_tk_widget().grid(row=3, columnspan=4)
+            plot1.axvspan(loudest_interval[0] * sr / hop_length, loudest_interval[1] * sr / hop_length, color='r', alpha=0.5)        
         
-        def update_loudest_interval(draw=True):
+        update_plot()
+        canvas = FigureCanvasTkAgg(fig, master = window)
+        canvas.draw() 
+        canvas.get_tk_widget().grid(row=3, columnspan=4)
+        
+        def update_loudest_interval():
             nonlocal loudest_interval
             start_frame_index = start_slider.get()
             frames_to_override = frames_slider.get()
@@ -111,9 +110,9 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
             end_time = (start_frame_index + frames_to_override) * hop_length / sr
             loudest_interval = (start_time, end_time)
             print(f"Updated Loudest Interval: {loudest_interval[0]:.2f} - {loudest_interval[1]:.2f}")
-            window.destroy()
-            if draw:
-                do_visualise()
+            fig.clear()
+            update_plot()
+            canvas.draw()
         
         def update_just_start_label(event):
             start_value.set(f"Start Frame: {int(start_slider.get())}")
@@ -176,16 +175,14 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
             sd.play(audio_data, sr)
 
         def save():
-            update_loudest_interval(draw=False)
+            update_loudest_interval()
             window.destroy()
             
         play_button = ttk.Button(window, text="Play Sound", command=play_sound)
         play_button.grid(row=2, column=1)
         update_button = ttk.Button(window, text="Set", command=save)
         update_button.grid(row=2, column=2)
-        plot()
         window.mainloop()
-    
     if visualise:
         print("Visualising...")
         do_visualise()
