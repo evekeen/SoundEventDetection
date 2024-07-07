@@ -71,8 +71,6 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
                 selected_indices.append(i)
     else:
         selected_indices = list(range(len(loud_intervals)))
-    print("Selected Indices:", selected_indices)
-    print("energies:", len(energies))
                 
     loud_intervals = [loud_intervals[i] for i in selected_indices]
     loud_energies = [energies[i] for i in selected_indices]
