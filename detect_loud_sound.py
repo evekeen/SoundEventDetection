@@ -152,7 +152,7 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
         start_label = ttk.Label(window, textvariable=start_value)
         start_label.grid(row=0, column=1)
         
-        start_slider = ttk.Scale(window, from_=0, to=len(energy)-1, orient="horizontal", length=300)
+        start_slider = ttk.Scale(window, from_=0, to=len(energy)-1, orient="horizontal", length=500)
         start_slider.set(loudest_interval[0] * sr / hop_length)
         start_slider.grid(row=0, column=2)
         start_slider.bind("<Motion>", update_start_label)
@@ -166,7 +166,7 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
         frames_label = ttk.Label(window, textvariable=frames_value)
         frames_label.grid(row=1, column=1)
         
-        frames_slider = ttk.Scale(window, from_=1, to=10, orient="horizontal", length=300)
+        frames_slider = ttk.Scale(window, from_=1, to=10, orient="horizontal", length=500)
         frames_slider.set((loudest_interval[1] - loudest_interval[0]) * sr / hop_length)
         frames_slider.grid(row=1, column=2)
         frames_slider.bind("<Motion>", update_frames_label)
