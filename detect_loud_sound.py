@@ -72,18 +72,23 @@ class LoudIntervalSelector:
         start_frame = int(self.loudest_interval[0] * self.sr)
         end_frame = int(self.loudest_interval[1] * self.sr)
         audio_data = self.y[start_frame:end_frame]
+        sd.stop()
         sd.play(audio_data, self.sr)
 
     def play_all(self):
+        sd.stop()
         sd.play(self.y, self.sr)
 
     def save(self):
         self.update_loudest_interval()
+        sd.stop()
         self.window.quit()
 
     def skip(self):
         self.loudest_interval = None
+        sd.stop()
         self.window.quit()
+        
 
     def configure_window(self, energy, sr, hop_length, loudest_interval, y):
         self.energy = energy
@@ -173,6 +178,7 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False, selecto
     if visualise:
         print("Visualising...")
         selector.configure_window(energy, sr, hop_length, loudest_interval, y)
+        selector.play_sound()
         selector.run()
         
     if not loudest_interval:
