@@ -175,6 +175,9 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
             end_frame = int(loudest_interval[1] * sr)
             audio_data = y[start_frame:end_frame]
             sd.play(audio_data, sr)
+        
+        def play_all():
+            sd.play(y, sr)
 
         def save():
             update_loudest_interval()
@@ -184,7 +187,9 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
             nonlocal loudest_interval
             loudest_interval = None
             window.destroy()
-            
+        
+        play_all_button = ttk.Button(window, text="Play All", command=play_all)
+        play_all_button.grid(row=2, column=0)    
         play_button = ttk.Button(window, text="Play", command=play_sound)
         play_button.grid(row=2, column=1)
         update_button = ttk.Button(window, text="Set", command=save)
