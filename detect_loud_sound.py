@@ -14,6 +14,7 @@ import dataset.spectogram.spectogram_configs as cfg
 from models.DcaseNet import DcaseNet_v3
 import tkinter as tk
 from tkinter import ttk
+import sounddevice as sd
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk) 
 
 def find_loud_intervals(file_path, output, detected=[], visualise=False):
@@ -83,74 +84,96 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
     loudest_interval = loud_intervals[loudest_interval_index]
     print("Loudest Interval:", loudest_interval)
     
+    def do_visualise():
+        nonlocal loudest_interval
+        draw = True
+        while draw:
+            draw = False
+            window = tk.Tk()
+            window.title("Loudest Interval Selection")
+            
+            def plot():
+                fig = Figure(figsize=(10, 10))
+                plot1 = fig.add_subplot(111)
+                plot1.plot(energy)
+                plot1.axhline(y=avg_energy, color='r', linestyle='--', label='Average Energy')
+                plot1.legend()
+                    
+                longest_start_time, longest_end_time = loudest_interval
+                longest_start_frame = int(longest_start_time * sr / hop_length)
+                longest_end_frame = int(longest_end_time * sr / hop_length)
+                plot1.axvspan(longest_start_frame, longest_end_frame, color='r', alpha=0.5)        
+                
+                canvas = FigureCanvasTkAgg(fig, master = window)   
+                canvas.draw() 
+            
+                canvas.get_tk_widget().pack() 
+                toolbar = NavigationToolbar2Tk(canvas, window) 
+                toolbar.update() 
+                canvas.get_tk_widget().pack() 
+            
+            def update_loudest_interval():
+                nonlocal loudest_interval
+                start_frame_index = start_slider.get()
+                frames_to_override = frames_slider.get()
+                start_time = start_frame_index * hop_length / sr
+                end_time = (start_frame_index + frames_to_override) * hop_length / sr
+                loudest_interval = (start_time, end_time)
+                print(f"Updated Loudest Interval: {loudest_interval[0]:.2f} - {loudest_interval[1]:.2f}")
+                window.destroy()
+                do_visualise()
+            
+            def update_start_label(event):
+                start_value.set(f"Start Frame: {int(start_slider.get())}")
+                update_loudest_interval()
+
+            def update_frames_label(event):
+                frames_value.set(f"Frames: {int(frames_slider.get())}")
+                update_loudest_interval()
+                
+            start_value = tk.StringVar()
+            start_value.set(f"Start Frame: {int(loudest_interval[0] * sr / hop_length)}")
+            start_label = ttk.Label(window, textvariable=start_value)
+            start_label.pack()
+            
+            start_slider = ttk.Scale(window, from_=0, to=len(energy)-1, orient="horizontal", length=200)
+            start_slider.set(loudest_interval[0] * sr / hop_length)
+            start_slider.pack()
+            # start_slider.bind("<Motion>", update_start_label)
+            start_slider.bind("<ButtonRelease-1>", update_start_label)
+
+            frames_value = tk.StringVar()
+            frames_value.set(f"Frames: {int((loudest_interval[1] - loudest_interval[0]) * sr / hop_length)}")
+            frames_label = ttk.Label(window, textvariable=frames_value)
+            frames_label.pack()
+            
+            frames_slider = ttk.Scale(window, from_=1, to=len(energy), orient="horizontal", length=200)
+            frames_slider.set((loudest_interval[1] - loudest_interval[0]) * sr / hop_length)
+            frames_slider.pack()
+            # frames_slider.bind("<Motion>", update_frames_label)
+            frames_slider.bind("<ButtonRelease-1>", update_frames_label)           
+            
+            def play_sound():
+                start_frame = int(loudest_interval[0] * sr)
+                end_frame = int(loudest_interval[1] * sr)
+                audio_data = y[start_frame:end_frame]
+                sd.play(audio_data, sr)
+
+            def save():
+                draw = False
+                update_loudest_interval()
+                window.destroy()
+                
+            play_button = ttk.Button(window, text="Play Sound", command=play_sound)
+            play_button.pack()
+            update_button = ttk.Button(window, text="Set", command=save)
+            update_button.pack()
+            plot()
+            window.mainloop()
+    
     if visualise:
         print("Visualising...")
-        window = tk.Tk()
-        window.title("Loudest Interval Selection")
-        
-        def plot():
-            fig = Figure(figsize=(10, 10))
-            plot1 = fig.add_subplot(111)
-            plot1.plot(energy)
-            plot1.axhline(y=avg_energy, color='r', linestyle='--', label='Average Energy')
-            plot1.legend()
-                
-            longest_start_time, longest_end_time = loudest_interval
-            longest_start_frame = int(longest_start_time * sr / hop_length)
-            longest_end_frame = int(longest_end_time * sr / hop_length)
-            plot1.axvspan(longest_start_frame, longest_end_frame, color='r', alpha=0.5)        
-            
-            canvas = FigureCanvasTkAgg(fig, master = window)   
-            canvas.draw() 
-        
-            canvas.get_tk_widget().pack() 
-            toolbar = NavigationToolbar2Tk(canvas, window) 
-            toolbar.update() 
-            canvas.get_tk_widget().pack() 
-        
-        def update_start_label(event):
-            start_value.set(f"Start Frame: {int(start_slider.get())}")
-
-        def update_frames_label(event):
-            frames_value.set(f"Frames: {int(frames_slider.get())}")
-
-        start_value = tk.StringVar()
-        start_value.set(f"Start Frame: {int(loudest_interval[0] * sr / hop_length)}")
-        start_label = ttk.Label(window, textvariable=start_value)
-        start_label.pack()
-        
-        start_slider = ttk.Scale(window, from_=0, to=len(energy)-1, orient="horizontal", length=200)
-        start_slider.set(loudest_interval[0] * sr / hop_length)
-        start_slider.pack()
-        start_slider.bind("<Motion>", update_start_label)
-        start_slider.bind("<ButtonRelease-1>", update_start_label)
-
-        frames_value = tk.StringVar()
-        frames_value.set(f"Frames: {int((loudest_interval[1] - loudest_interval[0]) * sr / hop_length)}")
-        frames_label = ttk.Label(window, textvariable=frames_value)
-        frames_label.pack()
-        
-        frames_slider = ttk.Scale(window, from_=1, to=len(energy), orient="horizontal", length=200)
-        frames_slider.set((loudest_interval[1] - loudest_interval[0]) * sr / hop_length)
-        frames_slider.pack()
-        frames_slider.bind("<Motion>", update_frames_label)
-        frames_slider.bind("<ButtonRelease-1>", update_frames_label)           
-
-        def update_loudest_interval():
-            nonlocal loudest_interval
-            start_frame_index = start_slider.get()
-            frames_to_override = frames_slider.get()
-            start_time = start_frame_index * hop_length / sr
-            end_time = (start_frame_index + frames_to_override) * hop_length / sr
-            loudest_interval = (start_time, end_time)
-            print("Updated Loudest Interval:", loudest_interval)
-                        
-            window.destroy()
-            
-        plot()
-        update_button = ttk.Button(window, text="Update Loudest Interval", command=update_loudest_interval)
-        update_button.pack()
-        window.mainloop()
+        do_visualise()
         
     loudest_file_name = os.path.join(output, os.path.basename(file_path))
     export_interval_wav(file_path, loudest_interval, loudest_file_name)
