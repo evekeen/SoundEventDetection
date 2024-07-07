@@ -12,7 +12,7 @@ from dataset.spectogram.preprocess import multichannel_complex_to_log_mel, multi
 import dataset.spectogram.spectogram_configs as cfg
 from models.DcaseNet import DcaseNet_v3
 
-def find_loud_intervals(file_path, output, detected, visualise=False):
+def find_loud_intervals(file_path, output, detected=[], visualise=False):
     max_time = 8.0
     y, sr = librosa.load(file_path, sr=None, duration=max_time)
 
@@ -58,13 +58,16 @@ def find_loud_intervals(file_path, output, detected, visualise=False):
     if start_time is not None:
         loud_intervals.append((start_time, max_time))
     
-    intersected_indices = []
-    for i, interval in enumerate(loud_intervals):
-        if has_intersection(interval, detected):
-            intersected_indices.append(i)
-            
-    loud_intervals = [loud_intervals[i] for i in intersected_indices]
-    loud_energies = [energies[i] for i in intersected_indices]
+    selected_indices = []
+    if detected:
+        for i, interval in enumerate(loud_intervals):
+            if has_intersection(interval, detected):
+                selected_indices.append(i)
+    else:
+        selected_indices = list(range(len(loud_intervals)))
+                
+    loud_intervals = [loud_intervals[i] for i in selected_indices]
+    loud_energies = [energies[i] for i in selected_indices]
     
     if not loud_intervals:
         print(f"NOT_DETECTED: {file_path}")
@@ -188,8 +191,8 @@ def process_directory(directory):
     for file in files:
         if file.endswith(".wav"):
             file_path = os.path.join(directory, file)
-            detected = detect_impact_regions(model, file_path)
-            interval = find_loud_intervals(file_path, output, detected)
+            # detected = detect_impact_regions(model, file_path)
+            interval = find_loud_intervals(file_path, output)
             if interval is None:
                 continue
             (start_time, end_time) = interval
