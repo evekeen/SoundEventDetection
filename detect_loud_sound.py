@@ -37,7 +37,7 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
     energy = energy[:int(max_time * sr / hop_length)]
     energy = energy / np.max(energy)
     avg_energy = np.mean(energy)
-    threshold = avg_energy * 1.4
+    threshold = avg_energy * 1.5
 
     loud_intervals = []
     energies = []
@@ -54,7 +54,8 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
             if i + 2 < len(energy) and energy[i+1] > threshold and energy[i+2] > threshold:
                 continue
             loud_intervals.append((start_time, end_time))
-            interval_energy = max(interval_energy, e)
+            interval_energy = interval_energy + e
+            interval_energy /= (end_time - start_time)
             energies.append(interval_energy)
             interval_energy = 0
             prev_start_time = start_time
@@ -65,13 +66,13 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
         loud_intervals.append((start_time, max_time))
         energies.append(interval_energy)
     
-    selected_indices = []
+    longer_interval_indexes = [i for i, interval in enumerate(loud_intervals) if interval[1] - interval[0] > 0.05 and interval[1] - interval[0] < 0.1]
     if detected:
         for i, interval in enumerate(loud_intervals):
             if has_intersection(interval, detected):
                 selected_indices.append(i)
     else:
-        selected_indices = list(range(len(loud_intervals)))
+        selected_indices = longer_interval_indexes
                 
     loud_intervals = [loud_intervals[i] for i in selected_indices]
     loud_energies = [energies[i] for i in selected_indices]
@@ -79,11 +80,13 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
     if not loud_intervals:
         print(f"NOT_DETECTED: {file_path}")
         return None
-    loudest_interval_index = np.argmax(loud_energies[:2])
+    print(loud_energies[:4])
+    print(loud_intervals[:4])
+    loudest_interval_index = np.argmax(loud_energies[:4])
+    print(loudest_interval_index)
     loudest_interval = loud_intervals[loudest_interval_index]
-    extended_interval = (loudest_interval[0] - 1, loudest_interval[1] + 1)
-    print("Extended Interval:", extended_interval)
-    print("Loudest Interval:", loudest_interval)
+    loudest_interval = (loudest_interval[0] - hop_length / sr, loudest_interval[1] + hop_length / sr)
+    print("Extended Interval:", loudest_interval)
     
     def do_visualise():
         nonlocal loudest_interval
