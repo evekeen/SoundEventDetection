@@ -118,7 +118,7 @@ def train(model, data_loader, criterion, num_steps, lr, log_freq, check_freq, sa
                     f"epoch: {epoch}, step: {iterations}, loss: {loss.item():.2f}, im/sec: {im_sec:.1f}, lr: {optimizer.param_groups[0]['lr']:.8f}")
 
                 val_losses, recal_sets, precision_sets, APs = eval(model, data_loader, criterion, outputs_dir, iteration=iterations,
-                                                                   device=device, limit_val_samples=30, plot_samples=plot_samples)
+                                                                   device=device, plot_samples=plot_samples)
                 print('AP: ', np.average(APs))
 
                 plotter.report_validation_metrics(val_losses, recal_sets, precision_sets, APs, iterations)
