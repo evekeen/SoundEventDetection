@@ -79,7 +79,7 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
     if not loud_intervals:
         print(f"NOT_DETECTED: {file_path}")
         return None
-    loudest_interval_index = np.argmax(loud_energies)
+    loudest_interval_index = np.argmax(loud_energies[:2])
     loudest_interval = loud_intervals[loudest_interval_index]
     extended_interval = (loudest_interval[0] - 1, loudest_interval[1] + 1)
     print("Extended Interval:", extended_interval)
