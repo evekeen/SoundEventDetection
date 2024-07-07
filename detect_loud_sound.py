@@ -115,6 +115,12 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
             if draw:
                 do_visualise()
         
+        def update_just_start_label(event):
+            start_value.set(f"Start Frame: {int(start_slider.get())}")
+
+        def update_just_frames_label(event):
+            frames_value.set(f"Frames: {int(frames_slider.get())}")
+            
         def update_start_label(event):
             start_value.set(f"Start Frame: {int(start_slider.get())}")
             update_loudest_interval()
@@ -146,7 +152,7 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
         start_slider = ttk.Scale(window, from_=0, to=len(energy)-1, orient="horizontal", length=200)
         start_slider.set(loudest_interval[0] * sr / hop_length)
         start_slider.grid(row=0, column=2)
-        # start_slider.bind("<Motion>", update_start_label)
+        start_slider.bind("<Motion>", update_just_start_label)
         start_slider.bind("<ButtonRelease-1>", update_start_label)
         
         increment_button = ttk.Button(window, text=">", command=increment_start_frame)
@@ -160,7 +166,7 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
         frames_slider = ttk.Scale(window, from_=1, to=len(energy), orient="horizontal", length=200)
         frames_slider.set((loudest_interval[1] - loudest_interval[0]) * sr / hop_length)
         frames_slider.grid(row=1, column=2)
-        # frames_slider.bind("<Motion>", update_frames_label)
+        frames_slider.bind("<Motion>", update_just_frames_label)
         frames_slider.bind("<ButtonRelease-1>", update_frames_label)           
         
         def play_sound():
