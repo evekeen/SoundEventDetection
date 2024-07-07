@@ -80,6 +80,8 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
         return None
     loudest_interval_index = np.argmax(loud_energies)
     loudest_interval = loud_intervals[loudest_interval_index]
+    extended_interval = (loudest_interval[0] - 1, loudest_interval[1] + 1)
+    print("Extended Interval:", extended_interval)
     print("Loudest Interval:", loudest_interval)
     
     def do_visualise():
@@ -131,7 +133,6 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
         def increment_start_frame():
             current_frame = start_slider.get()
             start_slider.set(current_frame + 1)
-            frames_slider.set(frames_slider.get() - 1)
             update_start_label(None)
             
         def decrement_start_frame():
@@ -148,7 +149,7 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
         start_label = ttk.Label(window, textvariable=start_value)
         start_label.grid(row=0, column=1)
         
-        start_slider = ttk.Scale(window, from_=0, to=len(energy)-1, orient="horizontal", length=200)
+        start_slider = ttk.Scale(window, from_=0, to=len(energy)-1, orient="horizontal", length=300)
         start_slider.set(loudest_interval[0] * sr / hop_length)
         start_slider.grid(row=0, column=2)
         start_slider.bind("<Motion>", update_just_start_label)
@@ -162,7 +163,7 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
         frames_label = ttk.Label(window, textvariable=frames_value)
         frames_label.grid(row=1, column=1)
         
-        frames_slider = ttk.Scale(window, from_=1, to=len(energy), orient="horizontal", length=200)
+        frames_slider = ttk.Scale(window, from_=1, to=10, orient="horizontal", length=300)
         frames_slider.set((loudest_interval[1] - loudest_interval[0]) * sr / hop_length)
         frames_slider.grid(row=1, column=2)
         frames_slider.bind("<Motion>", update_just_frames_label)
