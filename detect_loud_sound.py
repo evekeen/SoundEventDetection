@@ -281,6 +281,10 @@ def process_directory(directory):
     for file in files:
         if file.endswith(".wav"):
             file_path = os.path.join(directory, file)
+            csv_path = os.path.join(csv_output, os.path.basename(file_path).replace('.wav', '.csv'))
+            if os.path.exists(csv_path):
+                print(f"CSV file already exists for {file_path}")
+                continue
             # detected = detect_impact_regions(model, file_path)
             interval = find_loud_intervals(file_path, output, visualise=True)
             if interval is None:
@@ -288,7 +292,6 @@ def process_directory(directory):
             (start_time, end_time) = interval
             data = [['golf_impact', start_time, end_time, 0, 0, 1]]
             df = pd.DataFrame(data, columns=["sound_event_recording","start_time","end_time","ele","azi","dist"])
-            csv_path = os.path.join(csv_output, os.path.basename(file_path).replace('.wav', '.csv'))
             df.to_csv(csv_path, index=False)
 
 if __name__ == "__main__":
