@@ -20,8 +20,8 @@ class DcaseNet_v3(nn.Module):
         self.pool_size = pool_size
         
         self.conv_block1 = ConvBlock(in_channels=2, out_channels=64)
-        self.conv_block2 = ConvBlock(in_channels=64, out_channels=128)
-        self.conv_block3 = ConvBlock(in_channels=128, out_channels=128)
+        self.conv_block2 = ConvBlock(in_channels=64, out_channels=128, pool_size=(2, 1))
+        self.conv_block3 = ConvBlock(in_channels=128, out_channels=128, pool_size=(2, 1))
         # self.conv_block4_1 = ConvBlock(in_channels=256, out_channels=256)
         # self.conv_block4_2 = ConvBlock(in_channels=256, out_channels=256)
 
@@ -65,7 +65,7 @@ class DcaseNet_v3(nn.Module):
         out_SED = x_2
         #out_SED = self.layer_SED(x)
         out_SED = torch.sigmoid(self.event_fc(out_SED))
-        out_SED = out_SED.repeat_interleave(repeats=8, dim=1)
+        out_SED = out_SED.repeat_interleave(repeats=2, dim=1)
         return out_SED
     
     def model_description(self):
