@@ -173,7 +173,8 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False, selecto
         print(f"NOT_DETECTED: {file_path}")
         return None
     loudest_interval = loud_intervals[0]
-    loudest_interval = (loudest_interval[0] - hop_length * 2 / sr, loudest_interval[1] + hop_length * 2 / sr)
+    start_time = max(0, loudest_interval[0] - hop_length * 2 / sr)
+    loudest_interval = (start_time, loudest_interval[1] + hop_length * 2 / sr)
     
     if visualise:
         print("Visualising...")
