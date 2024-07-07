@@ -306,11 +306,13 @@ def process_directory(directory):
     files = os.listdir(directory)
     files.sort()
     for file in files:
-        if file in skip_list:
-            print(f"Skipping {file}")
-            continue
         if file.endswith(".wav"):
             file_path = os.path.join(directory, file)
+            
+            if file_path in skip_list:
+                print(f"Skipping {file_path}")
+                continue
+            
             csv_path = os.path.join(csv_output, os.path.basename(file_path).replace('.wav', '.csv'))
             if os.path.exists(csv_path):
                 print(f"CSV file already exists for {file_path}")
@@ -323,7 +325,7 @@ def process_directory(directory):
                 skip_list.append(file)
                 with open(csv_file, "a") as file:
                     writer = csv.writer(file)
-                    writer.writerow([file])
+                    writer.writerow([file_path])
                 continue
             (start_time, end_time) = interval
             data = [['golf_impact', start_time, end_time, 0, 0, 1]]
