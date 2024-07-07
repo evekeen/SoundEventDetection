@@ -1,4 +1,5 @@
 import argparse
+import csv
 import os
 import sys
 import librosa
@@ -179,15 +180,25 @@ def find_loud_intervals(file_path, output, detected=[], visualise=False):
             update_loudest_interval()
             window.destroy()
             
-        play_button = ttk.Button(window, text="Play Sound", command=play_sound)
+        def skip():
+            nonlocal loudest_interval
+            loudest_interval = None
+            window.destroy()
+            
+        play_button = ttk.Button(window, text="Play", command=play_sound)
         play_button.grid(row=2, column=1)
         update_button = ttk.Button(window, text="Set", command=save)
         update_button.grid(row=2, column=2)
+        skip_button = ttk.Button(window, text="Skip", command=skip)
+        skip_button.grid(row=2, column=3)
         window.mainloop()
     if visualise:
         print("Visualising...")
         do_visualise()
         
+    if not loudest_interval:
+        return None
+
     loudest_file_name = os.path.join(output, os.path.basename(file_path))
     export_interval_wav(file_path, loudest_interval, loudest_file_name)
 
@@ -276,18 +287,38 @@ def process_directory(directory):
     checkpoint = torch.load('/Users/ivkin/git/SoundEventDetection-Pytorch/networks/dcasenet_fixed_order/iteration_5000.pth', map_location='cpu')
     model.load_state_dict(checkpoint['model'])
     
+    skip_list = []
+    csv_file = os.path.join(directory, 'skip.csv')
+    if not os.path.exists(csv_file):
+        with open(csv_file, "w") as file:
+            pass
+    with open(csv_file, "r") as file:
+        reader = csv.reader(file)
+        for row in reader:
+            skip_list.append(row[0])
+    
+    
     files = os.listdir(directory)
     files.sort()
     for file in files:
+        if file in skip_list:
+            print(f"Skipping {file}")
+            continue
         if file.endswith(".wav"):
             file_path = os.path.join(directory, file)
             csv_path = os.path.join(csv_output, os.path.basename(file_path).replace('.wav', '.csv'))
             if os.path.exists(csv_path):
                 print(f"CSV file already exists for {file_path}")
                 continue
+            print(f"Processing {file}")
             # detected = detect_impact_regions(model, file_path)
             interval = find_loud_intervals(file_path, output, visualise=True)
-            if interval is None:
+            if not interval:
+                print(f"Skipping {file}")
+                skip_list.append(file)
+                with open(csv_file, "a") as file:
+                    writer = csv.writer(file)
+                    writer.writerow([file])
                 continue
             (start_time, end_time) = interval
             data = [['golf_impact', start_time, end_time, 0, 0, 1]]
