@@ -8,6 +8,14 @@ from dataset.spectogram.preprocess import multichannel_stft, multichannel_comple
 from dataset.dataset_utils import read_audio_from_video, read_multichannel_audio
 from utils.plot_utils import plot_sample_features
 
+def detect_impact_time(model_output):
+    """
+    Args:
+        model_output: torch.Tensor of shape (seq_len, num_classes)
+    """
+    max_frame = torch.argmax(model_output, dim=0)[0].item()
+    return max_frame / cfg.working_sample_rate * cfg.hop_size
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Example of parser. ')
 
@@ -44,6 +52,8 @@ if __name__ == '__main__':
         output_event = model(input.unsqueeze(0))
     output_event = output_event.cpu()
     os.makedirs(args.outputs_dir, exist_ok=True)
+    print(detect_impact_time(output_event[0]))
+    
     plot_sample_features(log_mel_features,
                          mode='Spectrogram', 
                          output=output_event[0], 
