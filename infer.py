@@ -44,7 +44,6 @@ if __name__ == '__main__':
         output_event = model(input.unsqueeze(0))
     output_event = output_event.cpu()
     os.makedirs(args.outputs_dir, exist_ok=True)
-    print(input.shape, output_event.shape)
     plot_sample_features(log_mel_features,
                          mode='Spectrogram', 
                          output=output_event[0], 

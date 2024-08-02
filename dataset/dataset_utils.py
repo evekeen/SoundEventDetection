@@ -70,7 +70,6 @@ def read_multichannel_audio(audio_path, target_fs=None):
     if len(multichannel_audio.shape) == 1:
         multichannel_audio = multichannel_audio.reshape(-1, 1)
     if multichannel_audio.shape[1] < cfg.audio_channels:
-        print(multichannel_audio.shape[1])
         multichannel_audio = np.repeat(multichannel_audio.mean(1).reshape(-1, 1), cfg.audio_channels, axis=1)
     elif cfg.audio_channels == 1:
         multichannel_audio = multichannel_audio.mean(1).reshape(-1, 1)
