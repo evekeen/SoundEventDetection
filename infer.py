@@ -5,7 +5,7 @@ from models.DcaseNet import DcaseNet_v3
 from models.spectogram_models import *
 from dataset.spectogram import spectogram_configs as cfg
 from dataset.spectogram.preprocess import multichannel_stft, multichannel_complex_to_log_mel
-from dataset.dataset_utils import read_multichannel_audio
+from dataset.dataset_utils import read_audio_from_video, read_multichannel_audio
 from utils.plot_utils import plot_sample_features
 
 if __name__ == '__main__':
@@ -26,8 +26,13 @@ if __name__ == '__main__':
     model.load_state_dict(checkpoint['model'])
 
     print("Preprocessing audio file..")
+    input_path = args.audio_file
+    multichannel_audio = None
 
-    multichannel_audio = read_multichannel_audio(audio_path=args.audio_file, target_fs=cfg.working_sample_rate)
+    if input_path.endswith('.wav'):
+        multichannel_audio = read_multichannel_audio(audio_path=input_path, target_fs=cfg.working_sample_rate)
+    elif input_path.endswith('.mov') or input_path.endswith('.mp4'):
+        multichannel_audio = read_audio_from_video(video_path=input_path)
 
     log_mel_features = multichannel_complex_to_log_mel(multichannel_stft(multichannel_audio))
     

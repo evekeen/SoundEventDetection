@@ -90,3 +90,13 @@ def read_multichannel_audio(audio_path, target_fs=None):
         multichannel_audio = np.pad(multichannel_audio, ((0, pad_length), (0, 0)), 'constant')
 
     return multichannel_audio
+
+
+def read_audio_from_video(video_path):
+    audio_path = f"{os.path.splitext(video_path)[0]}.wav"
+    temp_dir = "/Users/ivkin/tmp/audio-cache"
+    audio_path = os.path.join(temp_dir, os.path.basename(audio_path))
+    if not os.path.exists(audio_path):
+        os.system(f"ffmpeg -i {video_path} -vn -ac 1 -ar {cfg.working_sample_rate} -f wav {audio_path}")
+
+    return read_multichannel_audio(audio_path)
