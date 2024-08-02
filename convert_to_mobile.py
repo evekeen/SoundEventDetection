@@ -26,7 +26,7 @@ def load_checkpoints(path):
 
 def load_and_evaluate_model():
     model = DcaseNet_v3(1)
-    model_home = os.path.join('networks', 'dcasenet_v3')
+    model_home = os.path.join('networks', 'dcase_pool_1')
     checkpoints = load_checkpoints(model_home)
     last_checkpoint = checkpoints[-1]
     checkpoint_path = os.path.join(model_home, last_checkpoint)
