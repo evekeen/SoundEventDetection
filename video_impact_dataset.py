@@ -4,6 +4,7 @@ from impact_detector import ImpactDetector
 import os
 import tkinter as tk
 from PIL import ImageTk, Image
+import yaml
 
 
 class VideoLabeler:
@@ -18,10 +19,12 @@ class VideoLabeler:
         self.video_files = None
         self.current_video_index = 0
         self.video_dir = None
+        self.output_dir = None
 
 
-    def load_videos(self, video_dir):
+    def load_videos(self, video_dir, output_dir="output"):
         self.video_dir = video_dir
+        self.output_dir = output_dir
         video_files = [f for f in os.listdir(video_dir) if os.path.isfile(os.path.join(video_dir, f))]
         self.video_files = [f for f in video_files if f.lower().endswith(('.mp4', '.avi', '.mov'))]
         
@@ -78,6 +81,7 @@ class VideoLabeler:
         
         
     def open_next_video(self):
+        self.save_impact_selection()
         self.current_video_index += 1
         print(f"Opening next video: {self.current_video_index}")
         if self.current_video_index >= len(self.video_files):
@@ -86,11 +90,24 @@ class VideoLabeler:
         self.video_path = os.path.join(self.video_dir, self.video_files[self.current_video_index])
         self.preview_impact_selection()
         
+        
+    def save_impact_selection(self):
+        video_name = os.path.splitext(os.path.basename(self.video_path))[0]
+        output_dir = os.path.join(self.output_dir, video_name)
+        
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        
+        output_file = os.path.join(output_dir, f"{video_name}.yaml")
+        impact_data = {"impact_frame": self.frame_num}
+        
+        with open(output_file, 'w') as f:
+            yaml.dump(impact_data, f)
 
 
-def prepare_dataset(video_dir):
+def prepare_dataset(video_dir, output_dir):
     labeler = VideoLabeler()
-    labeler.load_videos(video_dir)
+    labeler.load_videos(video_dir, output_dir)
     
     
 def get_fps(video_path):
@@ -112,6 +129,8 @@ def get_frame(video_path, frame_num):
 
 if __name__ == '__main__':
     video_dir = sys.argv[1]
+    output_dir = sys.argv[2] if len(sys.argv) > 2 else "output"
+
     if not os.path.exists(video_dir):
         print("The specified directory does not exist.")
         sys.exit(1)
@@ -119,5 +138,8 @@ if __name__ == '__main__':
     if not os.path.isdir(video_dir):
         print("The specified path is not a directory.")
         sys.exit(1)
+        
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-    prepare_dataset(video_dir)
+    prepare_dataset(video_dir, output_dir)

@@ -21,3 +21,4 @@ remote-training/
 *.csv
 *.png
 *.ptl
+label_results/
