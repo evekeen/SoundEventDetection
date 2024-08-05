@@ -14,12 +14,14 @@ class VideoLabeler:
         self.root.title("Impact Preview")
         self.detector = ImpactDetector("networks/dcase_pool_1/iteration_21600.pth")
         self.image_label = None
+        self.frame_slider = None
         self.frame_num = 0
         self.video_path = None
         self.video_files = None
         self.current_video_index = 0
         self.video_dir = None
         self.output_dir = None
+        self.total_frames = 0
 
 
     def load_videos(self, video_dir, output_dir="output"):
@@ -33,6 +35,7 @@ class VideoLabeler:
             return
         
         self.video_path = os.path.join(video_dir, self.video_files[self.current_video_index])
+        self.prepare_ui()
         self.preview_impact_selection()
         self.root.mainloop()
 
@@ -49,6 +52,12 @@ class VideoLabeler:
         
         continue_button = tk.Button(self.root, text="Continue", command=lambda: self.open_next_video())
         continue_button.grid(row=1, column=2)
+        
+        self.frame_slider = tk.Scale(self.root, from_=0, to=100, orient='horizontal', length=400)
+        self.frame_slider.grid(row=2, column=0, columnspan=3)
+        
+        self.frame_slider.bind("<Motion>", self.on_slider_changing)
+        self.frame_slider.bind("<ButtonRelease-1>", self.on_slider_change)
     
     
     def prev_frame(self):
@@ -58,11 +67,21 @@ class VideoLabeler:
         
     def next_frame(self):
         self.load_frame(self.frame_num + 1)
+        
+        
+    def on_slider_changing(self, event):
+        value = int(self.frame_slider.get())
+        self.frame_num = int(value)
+        
+        
+    def on_slider_change(self, event):
+        value = int(self.frame_slider.get())
+        print(f"Changed to frame {value}")
+        self.load_frame(int(value))
     
         
     def load_frame(self, new_frame_num):
         print(f"Loading frame {new_frame_num}")
-        self.prepare_ui()
         
         self.frame_num = new_frame_num
         
@@ -72,11 +91,16 @@ class VideoLabeler:
         image = ImageTk.PhotoImage(Image.fromarray(frame))
         self.image_label.configure(image=image)
         self.image_label.image = image
+        
+        self.frame_slider.set(self.frame_num)
     
     
     def preview_impact_selection(self):
         impact_time = self.detector.detect_impact(self.video_path)
         frame_num = int(impact_time * get_fps(self.video_path))
+        self.total_frames = int(cv2.VideoCapture(self.video_path).get(cv2.CAP_PROP_FRAME_COUNT))
+        self.frame_slider.configure(to=self.total_frames)
+        print(f"Total frames: {self.total_frames}")
         self.load_frame(frame_num)
         
         
