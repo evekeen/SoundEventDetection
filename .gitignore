@@ -14,6 +14,7 @@ Classical_methods/plots
 *.WAV
 *.wav
 *.mov
+*.MP4
 data/
 .DS_Store
 remote-training/
