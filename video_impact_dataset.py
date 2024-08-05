@@ -23,9 +23,10 @@ class VideoLabeler:
         self.frame_num = 0
         self.video_path = None
         self.video_files = None
-        self.current_video_index = 0
+        self.current_video_index = -1
         self.video_dir = None
         self.output_dir = None
+        self.output_file = None
         self.total_frames = 0
 
 
@@ -40,9 +41,8 @@ class VideoLabeler:
             print("No video files found in the directory.")
             return
         
-        self.video_path = os.path.join(video_dir, self.video_files[self.current_video_index])
         self.prepare_ui()
-        self.preview_impact_selection()
+        self.open_next_video()
         self.root.mainloop()
 
 
@@ -90,7 +90,7 @@ class VideoLabeler:
     
         
     def load_frame(self, new_frame_num):
-        print(f"Loading frame {new_frame_num}")
+        print(f"Frame {new_frame_num}")
         
         self.frame_num = new_frame_num
         
@@ -109,7 +109,6 @@ class VideoLabeler:
         frame_num = int(impact_time * get_fps(self.video_path))
         self.total_frames = int(cv2.VideoCapture(self.video_path).get(cv2.CAP_PROP_FRAME_COUNT))
         self.frame_slider.configure(to=self.total_frames)
-        print(f"Total frames: {self.total_frames}")
         self.load_frame(frame_num)
         self.update_plot()
         
@@ -117,25 +116,33 @@ class VideoLabeler:
     def open_next_video(self):
         self.save_impact_selection()
         self.current_video_index += 1
-        print(f"Opening next video: {self.current_video_index}")
         if self.current_video_index >= len(self.video_files):
             print("No more videos to label.")
             return
         self.video_path = os.path.join(self.video_dir, self.video_files[self.current_video_index])
-        self.preview_impact_selection()
-        
-        
-    def save_impact_selection(self):
         video_name = os.path.splitext(os.path.basename(self.video_path))[0]
         output_dir = os.path.join(self.output_dir, video_name)
         
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
         
-        output_file = os.path.join(output_dir, f"{video_name}.yaml")
+        self.output_file = os.path.join(output_dir, f"{video_name}.yaml")
+        if os.path.exists(self.output_file):
+            print(f"Skipping: {video_name}")
+            self.open_next_video()
+            return
+
+        print(f"Opening: {video_name}")
+        self.preview_impact_selection()
+        
+        
+    def save_impact_selection(self):
+        if self.output_file is None:
+            return
+        
         impact_data = {"impact_frame": self.frame_num}
         
-        with open(output_file, 'w') as f:
+        with open(self.output_file, 'w') as f:
             yaml.dump(impact_data, f)
             
             
