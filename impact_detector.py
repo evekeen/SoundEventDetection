@@ -30,7 +30,8 @@ class ImpactDetector:
     
     
     def detect_impact_time(self, model_output):
-        max_frame = torch.argmax(model_output, dim=0)[0].item()
+        to_search = model_output[0:int(model_output.shape[0] / 3)]
+        max_frame = torch.argmax(to_search, dim=0)[0].item()
         return max_frame / cfg.working_sample_rate * cfg.hop_size
 
     
