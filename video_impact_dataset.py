@@ -1,10 +1,14 @@
 import sys
 import cv2
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from impact_detector import ImpactDetector
 import os
 import tkinter as tk
 from PIL import ImageTk, Image
 import yaml
+
+from utils.plot_utils import plot_sample_features
 
 
 class VideoLabeler:
@@ -14,6 +18,7 @@ class VideoLabeler:
         self.root.title("Impact Preview")
         self.detector = ImpactDetector("networks/dcase_pool_1/iteration_21600.pth")
         self.image_label = None
+        self.chart_label = None
         self.frame_slider = None
         self.frame_num = 0
         self.video_path = None
@@ -27,7 +32,8 @@ class VideoLabeler:
     def load_videos(self, video_dir, output_dir="output"):
         self.video_dir = video_dir
         self.output_dir = output_dir
-        video_files = [f for f in os.listdir(video_dir) if os.path.isfile(os.path.join(video_dir, f))]
+        sorted_files = sorted(os.listdir(video_dir))
+        video_files = [f for f in sorted_files if os.path.isfile(os.path.join(video_dir, f))]
         self.video_files = [f for f in video_files if f.lower().endswith(('.mp4', '.avi', '.mov'))]
         
         if len(self.video_files) == 0:
@@ -43,6 +49,9 @@ class VideoLabeler:
     def prepare_ui(self):
         self.image_label = tk.Label(self.root)
         self.image_label.grid(row=0, column=0, columnspan=3)
+        
+        self.chart_label = tk.Label(self.root)
+        self.chart_label.grid(row=3, column=0, columnspan=3)
         
         prev_button = tk.Button(self.root, text="Previous Frame", command=lambda: self.prev_frame())
         prev_button.grid(row=1, column=0)
@@ -102,6 +111,7 @@ class VideoLabeler:
         self.frame_slider.configure(to=self.total_frames)
         print(f"Total frames: {self.total_frames}")
         self.load_frame(frame_num)
+        self.update_plot()
         
         
     def open_next_video(self):
@@ -127,6 +137,18 @@ class VideoLabeler:
         
         with open(output_file, 'w') as f:
             yaml.dump(impact_data, f)
+            
+            
+    def update_plot(self):
+        video_name = os.path.splitext(os.path.basename(self.video_path))[0]
+        self.plot_path = os.path.join(self.output_dir, video_name, f"{video_name}.png")
+        plot_sample_features(self.detector.log_mel_features, mode='Spectrogram', output=self.detector.output, plot_path=self.plot_path)
+        chart_image = Image.open(self.plot_path)
+        chart_image = chart_image.resize((400, 100))
+        chart = ImageTk.PhotoImage(chart_image)
+        self.chart_label.configure(image=chart)
+        self.chart_label.image = chart
+
 
 
 def prepare_dataset(video_dir, output_dir):

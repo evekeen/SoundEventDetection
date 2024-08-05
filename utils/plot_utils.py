@@ -64,7 +64,8 @@ def add_colorbar_to_axs(fig, ax, colorbar):
 
 
 def plot_sample_features(input, mode, output=None, target=None, file_name=None, plot_path=None):
-    os.makedirs(os.path.dirname(plot_path), exist_ok=True)
+    if plot_path:
+        os.makedirs(os.path.dirname(plot_path), exist_ok=True)
     num_plots = 1
     if output is not None:
         num_plots += 1
@@ -105,7 +106,8 @@ def plot_sample_features(input, mode, output=None, target=None, file_name=None, 
         add_colorbar_to_axs(fig, axs[idx], colorbar)
 
     fig.tight_layout()
-    plt.savefig(plot_path)
+    if plot_path:
+        plt.savefig(plot_path)
     plt.close(fig)
     plt.close()
     plt.clf()

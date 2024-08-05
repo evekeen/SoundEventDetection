@@ -12,16 +12,20 @@ class ImpactDetector:
         self.model = DcaseNet_v3(1).to(self.device)
         checkpoint = torch.load(ckpt_path, map_location=self.device)
         self.model.load_state_dict(checkpoint['model'])
+        self.log_mel_features = None
+        self.output = None
     
 
     def detect_impact(self, video_path):
         multichannel_audio = read_audio_from_video(video_path)
         log_mel_features = multichannel_complex_to_log_mel(multichannel_stft(multichannel_audio))
+        self.log_mel_features = log_mel_features
         
         with torch.no_grad():
             input = torch.from_numpy(log_mel_features).to(torch.float32).to(self.device)
             output_event = self.model(input.unsqueeze(0))
         output_event = output_event.cpu()
+        self.output = output_event[0]
         return self.detect_impact_time(output_event[0])
     
     
