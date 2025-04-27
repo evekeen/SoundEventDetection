@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { supabase } from './supabase';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -13,14 +14,31 @@ export interface Task {
   video_url: string | null;
 }
 
+// Create an axios instance that includes the auth token
+const apiClient = axios.create({
+  baseURL: API_URL,
+});
+
+// Add an interceptor to add the auth token to each request
+apiClient.interceptors.request.use(async (config) => {
+  const { data } = await supabase.auth.getSession();
+  const session = data.session;
+  
+  if (session) {
+    config.headers.Authorization = `Bearer ${session.access_token}`;
+  }
+  
+  return config;
+});
+
 export const api = {
   getTasks: async (): Promise<Task[]> => {
-    const response = await axios.get(`${API_URL}/tasks`);
+    const response = await apiClient.get('/tasks');
     return response.data;
   },
 
   getTask: async (taskId: string): Promise<Task> => {
-    const response = await axios.get(`${API_URL}/tasks/${taskId}`);
+    const response = await apiClient.get(`/tasks/${taskId}`);
     return response.data;
   },
 
@@ -28,7 +46,7 @@ export const api = {
     const formData = new FormData();
     formData.append('file', file);
     
-    const response = await axios.post(`${API_URL}/tasks`, formData, {
+    const response = await apiClient.post('/tasks', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -38,7 +56,7 @@ export const api = {
   },
 
   deleteTask: async (taskId: string): Promise<void> => {
-    await axios.delete(`${API_URL}/tasks/${taskId}`);
+    await apiClient.delete(`/tasks/${taskId}`);
   },
 
   getVideoUrl: (task: Task): string => {

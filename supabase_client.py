@@ -80,7 +80,11 @@ class SupabaseClient:
                 else:
                     serialized_data[key] = value
             
-            response = self.client.table("tasks").insert(serialized_data).execute()
+            # Use service client for task creation if available
+            client_to_use = self.service_client if self.service_client else self.client
+            logger.info(f"Using {'service role' if self.service_client else 'public'} client for task creation")
+            
+            response = client_to_use.table("tasks").insert(serialized_data).execute()
             if response.data and len(response.data) > 0:
                 logger.info(f"Task created with ID: {response.data[0]['id']}")
                 return response.data[0]
@@ -93,7 +97,10 @@ class SupabaseClient:
     def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
         """Get a task by ID"""
         try:
-            response = self.client.table("tasks").select("*").eq("id", task_id).execute()
+            # Use service client if available
+            client_to_use = self.service_client if self.service_client else self.client
+            
+            response = client_to_use.table("tasks").select("*").eq("id", task_id).execute()
             if response.data and len(response.data) > 0:
                 return response.data[0]
             return None
@@ -112,7 +119,10 @@ class SupabaseClient:
                 else:
                     serialized_data[key] = value
             
-            response = self.client.table("tasks").update(serialized_data).eq("id", task_id).execute()
+            # Use service client if available
+            client_to_use = self.service_client if self.service_client else self.client
+            
+            response = client_to_use.table("tasks").update(serialized_data).eq("id", task_id).execute()
             if response.data and len(response.data) > 0:
                 logger.info(f"Task {task_id} updated successfully")
                 return response.data[0]
@@ -124,7 +134,10 @@ class SupabaseClient:
     def delete_task(self, task_id: str) -> bool:
         """Delete a task by ID"""
         try:
-            response = self.client.table("tasks").delete().eq("id", task_id).execute()
+            # Use service client if available
+            client_to_use = self.service_client if self.service_client else self.client
+            
+            response = client_to_use.table("tasks").delete().eq("id", task_id).execute()
             if response.data and len(response.data) > 0:
                 logger.info(f"Task {task_id} deleted successfully")
                 return True
@@ -136,7 +149,10 @@ class SupabaseClient:
     def list_tasks(self) -> List[Dict[str, Any]]:
         """List all tasks"""
         try:
-            response = self.client.table("tasks").select("*").order("created_at", desc=True).execute()
+            # Use service client if available
+            client_to_use = self.service_client if self.service_client else self.client
+            
+            response = client_to_use.table("tasks").select("*").order("created_at", desc=True).execute()
             return response.data
         except Exception as e:
             logger.error(f"Failed to list tasks: {str(e)}")
