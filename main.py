@@ -4,7 +4,7 @@ from pydantic import BaseModel
 import torch
 import requests
 import tempfile
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, File, UploadFile, Form
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -12,6 +12,7 @@ from models.DcaseNet import DcaseNet_v3
 from dataset.spectogram import spectogram_configs as cfg
 from dataset.spectogram.preprocess import multichannel_stft, multichannel_complex_to_log_mel
 from dataset.dataset_utils import read_audio_from_video
+from typing import Optional
 
 logging.basicConfig(
     level=logging.INFO,
@@ -59,7 +60,7 @@ app.add_middleware(
 )
 
 class ImpactDetectionRequest(BaseModel):
-    video_url: str
+    video_url: Optional[str] = None
 
 def detect_impact_time(model_output):
     """
@@ -98,15 +99,36 @@ async def global_exception_handler(request, exc):
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": "An unexpected error occurred. Please try again later."}
     )
-
+    
 @app.post("/detect-impact")
 async def detect_impact(impact_detection_request: ImpactDetectionRequest):
-    video_url = impact_detection_request.video_url
-    logger.info(f"Processing impact detection request for URL: {video_url}")
+    return await detect_impact(impact_detection_request=impact_detection_request, file=None)
+@app.post("/detect-impact-file")
+async def detect_impact_file(file: UploadFile = File(...)):
+    return await detect_impact(impact_detection_request=None, file=file)
+
+async def detect_impact(impact_detection_request: Optional[ImpactDetectionRequest] = None, 
+                         file: Optional[UploadFile] = None):
+    logger.info("Processing impact detection request")
+    
+    if not impact_detection_request and not file:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Either video_url or file upload is required"
+        )
     
     with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as temp_file:
         try:
-            download_video(video_url, temp_file.name)
+            if impact_detection_request and impact_detection_request.video_url:
+                video_url = impact_detection_request.video_url
+                logger.info(f"Using URL: {video_url}")
+                download_video(video_url, temp_file.name)
+            elif file:
+                logger.info(f"Using uploaded file: {file.filename}")
+                content = await file.read()
+                with open(temp_file.name, 'wb') as f:
+                    f.write(content)
+            
             video_path = temp_file.name
             
             try:
