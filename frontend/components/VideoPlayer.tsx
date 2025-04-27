@@ -19,100 +19,119 @@ export default function VideoPlayer({ videoUrl, impactTimeSeconds }: VideoPlayer
   const [showPreview, setShowPreview] = useState(false);
   const [previewPosition, setPreviewPosition] = useState({ x: 0, time: 0 });
   const [fps, setFps] = useState(24);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isVideoError, setIsVideoError] = useState(false);
 
-  const captureFrame = (time: number) => {
-    if (!videoRef.current || !canvasRef.current) return null;
+  // Function to capture frames from video
+  const captureFrame = () => {
+    if (!videoRef.current || !canvasRef.current) {
+      console.error("Video or canvas ref not available");
+      return null;
+    }
     
     const video = videoRef.current;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     
-    if (!ctx) return null;
-    
-    // Check if video has valid dimensions and is ready
-    if (video.videoWidth === 0 || video.videoHeight === 0 || video.readyState < 2) {
-      console.log('Video not ready for capture');
+    if (!ctx) {
+      console.error("Could not get canvas context");
       return null;
     }
     
+    // Only capture if video has dimensions and is ready
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      console.error("Video dimensions not available", video.videoWidth, video.videoHeight);
+      return null;
+    }
+    
+    // Set canvas size to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
-    // Try-catch to handle potential drawing errors
+    // Capture the current frame
     try {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      return canvas.toDataURL('image/jpeg');
+      return canvas.toDataURL('image/jpeg', 0.9);
     } catch (e) {
-      console.error('Error capturing frame:', e);
+      console.error("Error capturing frame:", e);
       return null;
     }
   };
-
-  // Function to capture the impact frame
-  const captureImpactFrame = async () => {
-    if (!impactTimeSeconds || !playerRef.current || !videoRef.current) return;
+  
+  // Handle when video is ready
+  const handleVideoLoaded = () => {
+    console.log("Video loaded event fired");
+    setIsLoaded(true);
     
-    // First pause and seek to impact time
-    setPlaying(false);
-    playerRef.current.seekTo(impactTimeSeconds, 'seconds');
-    
-    // Wait a bit for the video to update
-    setTimeout(() => {
-      setCurrentFrameImage(captureFrame(impactTimeSeconds));
-    }, 200);
-  };
-
-  useEffect(() => {
-    if (impactTimeSeconds !== null && playerRef.current && videoRef.current) {
-      captureImpactFrame();
-    }
-  }, [impactTimeSeconds, videoUrl]);
-
-  const handleDuration = (duration: number) => {
-    setDuration(duration);
-  };
-
-  const handleProgress = (state: { played: number; playedSeconds: number }) => {
-    if (!isDragging) {
-      setCurrentTime(state.playedSeconds);
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration);
       
-      // Capture frame periodically during playback
-      if (playing && state.playedSeconds % 1 < 0.1) {
-        setCurrentFrameImage(captureFrame(state.playedSeconds));
+      // If we have an impact time, seek to it
+      if (impactTimeSeconds !== null) {
+        handleSeek(impactTimeSeconds);
+      } else {
+        // Otherwise capture the current frame
+        const frame = captureFrame();
+        if (frame) {
+          setCurrentFrameImage(frame);
+        }
       }
     }
   };
-
+  
+  // Handle seeking in the video
   const handleSeek = (time: number) => {
-    if (playerRef.current) {
-      playerRef.current.seekTo(time, 'seconds');
-      setCurrentTime(time);
-      
-      // Increased timeout to give video more time to load the frame
-      setTimeout(() => {
-        const frame = captureFrame(time);
-        if (frame) {
-          setCurrentFrameImage(frame);
-        } else {
-          // If capture fails, try again after a longer delay
-          setTimeout(() => {
-            const retryFrame = captureFrame(time);
-            if (retryFrame) {
-              setCurrentFrameImage(retryFrame);
-            }
-          }, 300);
-        }
-      }, 150);
+    if (!videoRef.current) return;
+    
+    console.log("Seeking to time:", time);
+    // Pause while seeking
+    setPlaying(false);
+    
+    // Update current time and seek video
+    setCurrentTime(time);
+    videoRef.current.currentTime = time;
+  };
+  
+  // Handle timeupdate event to capture frames
+  const handleTimeUpdate = () => {
+    if (!videoRef.current) return;
+    
+    setCurrentTime(videoRef.current.currentTime);
+    
+    // Capture the current frame
+    const frame = captureFrame();
+    if (frame) {
+      setCurrentFrameImage(frame);
     }
   };
-
+  
+  // Handle video error
+  const handleVideoError = () => {
+    console.error("Video error occurred");
+    setIsVideoError(true);
+  };
+  
+  // Handle play/pause
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    
+    if (playing) {
+      videoRef.current.pause();
+    } else {
+      videoRef.current.play();
+    }
+    
+    setPlaying(!playing);
+  };
+  
+  // Format time for display
   const formatTime = (timeInSeconds: number) => {
     const minutes = Math.floor(timeInSeconds / 60);
     const seconds = Math.floor(timeInSeconds % 60);
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  // Mouse event handlers for timeline manipulation
+  // Mouse event handlers for timeline
   const handleTimelineMouseDown = (e: React.MouseEvent) => {
     if (!timelineRef.current || duration <= 0) return;
     
@@ -161,7 +180,6 @@ export default function VideoPlayer({ videoUrl, impactTimeSeconds }: VideoPlayer
       time: previewTime 
     });
     
-    // Only handle preview in mouse move, not seeking
     if (!isDragging) {
       setShowPreview(true);
     }
@@ -170,22 +188,6 @@ export default function VideoPlayer({ videoUrl, impactTimeSeconds }: VideoPlayer
   const handleTimelineMouseLeave = () => {
     if (!isDragging) {
       setShowPreview(false);
-    }
-  };
-
-  const handleVideoRef = (player: ReactPlayer) => {
-    if (player) {
-      const internalPlayer = player.getInternalPlayer();
-      if (internalPlayer) {
-        videoRef.current = internalPlayer as HTMLVideoElement;
-        
-        // Capture initial frame once video is loaded
-        setTimeout(() => {
-          if (!currentFrameImage) {
-            setCurrentFrameImage(captureFrame(currentTime));
-          }
-        }, 500);
-      }
     }
   };
 
@@ -198,6 +200,13 @@ export default function VideoPlayer({ videoUrl, impactTimeSeconds }: VideoPlayer
     const newTime = Math.max(0, Math.min(duration, currentTime + (steps / fps)));
     handleSeek(newTime);
   };
+
+  // Effect to seek to impact time when it changes
+  useEffect(() => {
+    if (impactTimeSeconds !== null && isLoaded && videoRef.current) {
+      handleSeek(impactTimeSeconds);
+    }
+  }, [impactTimeSeconds, isLoaded, videoUrl]);
 
   // Current frame number calculated from time
   const currentFrameNumber = getCurrentFrameNumber();
@@ -337,7 +346,7 @@ export default function VideoPlayer({ videoUrl, impactTimeSeconds }: VideoPlayer
         <div className="w-full flex justify-center mt-2">
           <button 
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition mx-2"
-            onClick={() => setPlaying(!playing)}
+            onClick={togglePlay}
           >
             {playing ? 'Pause' : 'Play'}
           </button>
@@ -353,29 +362,22 @@ export default function VideoPlayer({ videoUrl, impactTimeSeconds }: VideoPlayer
         </div>
       </div>
       
-      {/* Hidden Video Player (hidden but functional) */}
-      <div className="hidden">
-        <ReactPlayer
-          ref={playerRef}
-          url={videoUrl}
-          width="100%"
-          height="100%"
-          playing={playing}
-          controls={false}
-          onDuration={handleDuration}
-          onProgress={handleProgress}
-          onReady={handleVideoRef}
-          config={{
-            file: {
-              attributes: {
-                crossOrigin: "anonymous"
-              }
-            }
-          }}
+      {/* Hidden, but functional video player */}
+      <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '1px', height: '1px', overflow: 'hidden' }}>
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          crossOrigin="anonymous"
+          preload="auto"
+          width="640"
+          height="360"
+          onLoadedData={handleVideoLoaded}
+          onTimeUpdate={handleTimeUpdate}
+          onError={handleVideoError}
         />
       </div>
       
-      <canvas ref={canvasRef} className="hidden" />
+      <canvas ref={canvasRef} style={{ display: 'none' }} width="640" height="360" />
     </div>
   );
 } 
