@@ -29,15 +29,23 @@ export default function VideoPlayer({ videoUrl, impactTimeSeconds }: VideoPlayer
     
     if (!ctx) return null;
     
-    // Set canvas dimensions to match video
+    // Check if video has valid dimensions and is ready
+    if (video.videoWidth === 0 || video.videoHeight === 0 || video.readyState < 2) {
+      console.log('Video not ready for capture');
+      return null;
+    }
+    
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     
-    // Draw the current frame on the canvas
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    // Convert to data URL
-    return canvas.toDataURL('image/jpeg');
+    // Try-catch to handle potential drawing errors
+    try {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg');
+    } catch (e) {
+      console.error('Error capturing frame:', e);
+      return null;
+    }
   };
 
   // Function to capture the impact frame
@@ -79,7 +87,22 @@ export default function VideoPlayer({ videoUrl, impactTimeSeconds }: VideoPlayer
     if (playerRef.current) {
       playerRef.current.seekTo(time, 'seconds');
       setCurrentTime(time);
-      setCurrentFrameImage(captureFrame(time));
+      
+      // Increased timeout to give video more time to load the frame
+      setTimeout(() => {
+        const frame = captureFrame(time);
+        if (frame) {
+          setCurrentFrameImage(frame);
+        } else {
+          // If capture fails, try again after a longer delay
+          setTimeout(() => {
+            const retryFrame = captureFrame(time);
+            if (retryFrame) {
+              setCurrentFrameImage(retryFrame);
+            }
+          }, 300);
+        }
+      }, 150);
     }
   };
 
