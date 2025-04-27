@@ -25,3 +25,4 @@ label_results/
 app.log
 frontend/node_modules/
 frontend/.next/
+.env
