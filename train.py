@@ -1,138 +1,152 @@
+import argparse
 import os
-from tqdm import tqdm
+
 import torch
-from torch import optim
-from utils.common import ProgressPlotter
-from utils.metric_utils import calculate_metrics
-from utils.plot_utils import plot_sample_features
-from time import time
-import numpy as np
+from torch.utils.data import DataLoader
+from models.DcaseNet import DcaseNet_v3
+from trainer import train
+from utils.common import WeightedBCE
 
 
-def eval(model, dataloader, criterion, outputs_dir, iteration, device, limit_val_samples=None, plot_samples=False):
-    losses = []
-    recal_sets, precision_sets, APs = [], [], []
-    debug_outputs = []
-    debug_targets = []
-    debug_inputs = []
-    debug_file_names = []
-    val_sampler = dataloader.dataset.get_validation_sampler(max_validate_num=limit_val_samples)
-    for idx, (input, target, file_name) in enumerate(val_sampler):
-        model.eval()
-        with torch.no_grad():
-            model.eval()
-            output = model(input.to(device).float()).cpu()
+def get_spectogram_dataset_model_and_criterion(args):
+    from dataset.spectogram.spectograms_dataset import preprocess_film_clap_data, SpectogramDataset, preprocess_tau_sed_data
+    from dataset.spectogram import spectogram_configs as cfg
+    from models.spectogram_models import Cnn_AvgPooling
 
-        loss = criterion(output, target.float())
+    # Define the dataset
+    if args.dataset_name.lower() == "tau":
+        features_and_labels_dir, features_mean_std_file = preprocess_tau_sed_data(args.dataset_dir,
+                                                                                  fold_name='eval',
+                                                                                  preprocess_mode=args.preprocess_mode,
+                                                                                  force_preprocess=args.force_preprocess)
+    elif args.dataset_name.lower() == "filmclap":
+        features_and_labels_dir, features_mean_std_file = preprocess_film_clap_data(args.dataset_dir,
+                                                                                    preprocessed_mode=args.preprocess_mode,
+                                                                                    force_preprocess=args.force_preprocess)
+    else:
+        raise ValueError(f"Only tau and filmclap datasets are supported, '{args.dataset_name}' given")
 
-        if len(input.shape) == 4:
-            mode = 'Spectogram'
-            # spectogram: (batch, channels, frames, bins),
-            # output: (batch, frames, classes)
-            # target: (batch, frames, classes)
-            input = input[0]
-            output = output[0]
-            target = target[0]
-        else:
-            mode = 'Waveform'
-            # waveform (frames, channels, wave_samples),
-            # output: (frames, classes)
-            # target: (frames)
-            input = input.permute(1, 0, 2)
-            target = target.reshape(-1,1)
+    dataset = SpectogramDataset(features_and_labels_dir, features_mean_std_file,
+                                       augment_data=args.augment_data,
+                                       balance_classes=args.balance_classes,
+                                       val_descriptor=args.val_descriptor,
+                                       preprocessed_mode=args.preprocess_mode)
 
-        output_logits = torch.sigmoid(output).numpy()
-        target = target.numpy()
+    # Define the model
+    # model = Cnn_AvgPooling(cfg.classes_num, model_config=[(32,2), (64,2), (128,2), (128,1)])
+    # model = MobileNetV1(cfg.classes_num)
+    model = DcaseNet_v3(cfg.classes_num)
+    if args.ckpt != '':
+        checkpoint = torch.load(args.ckpt, map_location=device)
+        model.load_state_dict(checkpoint['model'])
 
-        recal_vals, precision_vals, AP = calculate_metrics(output_logits, target)
+    # define the crieterion
+    criterion = WeightedBCE(recall_factor=args.recall_priority, multi_frame=True)
 
-        losses.append(loss.item())
-        recal_sets.append(recal_vals)
-        precision_sets.append(precision_vals)
-        APs.append(AP)
+    full_descriptor = f"{args.preprocess_mode}-{cfg.cfg_descriptor}"
 
-        debug_inputs.append(input)
-        debug_outputs.append(output_logits)
-        debug_targets.append(target)
-        debug_file_names.append(file_name)
-
-    if plot_samples:
-        # plot input, outputs and targets of worst and best samples by each metric
-        for (metric_name, values, named_indices) in [
-                                            ("loss", losses, [('worst', -1), ('2-worst', -2), ('3-worst', -3), ('best', 0)]),
-                                            ('AP', APs, [('worst', 0), ('best', -1)])]:
-            indices = np.argsort(values)
-            for (name, idx) in named_indices:
-                val_sample_idx = indices[idx]
-                plot_sample_features(debug_inputs[val_sample_idx],
-                                    mode=mode,
-                                    output=debug_outputs[val_sample_idx],
-                                    target=debug_targets[val_sample_idx],
-                                    file_name=debug_file_names[val_sample_idx] + f" {metric_name} {values[val_sample_idx]:.2f}",
-                                    plot_path=os.path.join(outputs_dir, 'images', f"Iter-{iteration}",
-                                                        f"{metric_name}-{name}.png"))
-
-    return losses, recal_sets, precision_sets, APs
+    return dataset, model, criterion, full_descriptor
 
 
-def train(model, data_loader, criterion, num_steps, lr, log_freq, check_freq, sample_freq, on_augment, outputs_dir, device):
-    print("Training:")
-    print("\t- Using device: ", device)
-    lr_decay_freq = 200
-    plotter = ProgressPlotter()
-    os.makedirs(os.path.join(outputs_dir, 'checkpoints'), exist_ok=True)
+def get_waveform_dataset_and_model(args):
+    from dataset.waveform.waveform_dataset import WaveformDataset
+    from dataset.waveform.waveform_configs import cfg_descriptor, time_margin
+    from models.waveform_models import M5
+    from dataset.dataset_utils import get_film_clap_paths_and_labels, get_tau_sed_paths_and_labels
+    from dataset.download_tau_sed_2019 import ensure_tau_data
 
-    # Optimizer
-    optimizer = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-08, weight_decay=0., amsgrad=True)
+    if args.dataset_name.lower() == "tau":
+        audio_dir, meta_data_dir = ensure_tau_data(f"{args.dataset_dir}/Tau_sound_events_2019", fold_name='eval')
+        audio_paths_labels_and_names = get_tau_sed_paths_and_labels(audio_dir, meta_data_dir)
+    elif args.dataset_name.lower() == "filmclap":
+        audio_paths_labels_and_names = get_film_clap_paths_and_labels(os.path.join(args.dataset_dir, 'FilmClap'), time_margin)
+    else:
+        raise ValueError(f"Only tau and filmclap datasets are supported, '{args.dataset_name}' given")
 
-    iterations = 0
-    epoch = 0
-    training_start_time = time()
-    tqdm_bar = tqdm(total=num_steps)
-    tqdm_bar.update(iterations)
-    tqdm_bar.set_description("Waiting for information..")
-    while iterations < num_steps:
-        for (batch_features, event_labels) in data_loader:
-            tqdm_bar.update()
-            # forward
-            model.train()
-            batch_outputs = model(batch_features.to(torch.float32).to(device))
-            loss = criterion(batch_outputs, event_labels.to(torch.float32).to(device))
+    dataset = WaveformDataset(audio_paths_labels_and_names,
+                              augment_data=args.augment_data,
+                              balance_classes=args.balance_classes,
+                              val_descriptor=args.val_descriptor
+                              )
+    model = M5(1)
 
-            # Backward
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+    criterion = WeightedBCE(recall_factor=args.recall_priority, multi_frame=False)
 
-            plotter.report_train_loss(loss.item())
-            iterations += 1
+    return dataset, model, criterion, cfg_descriptor
 
-            if iterations % lr_decay_freq == 0:
-                for param_group in optimizer.param_groups:
-                    param_group['lr'] *= 0.997
 
-            plot_samples = iterations % sample_freq == 0
-            if iterations % log_freq == 0:
-                im_sec = iterations * data_loader.batch_size / (time() - training_start_time)
-                tqdm_bar.set_description(
-                    f"epoch: {epoch}, step: {iterations}, loss: {loss.item():.2f}, im/sec: {im_sec:.1f}, lr: {optimizer.param_groups[0]['lr']:.8f}")
+def get_dataset_and_model(args):
+    if args.train_features.lower() == "spectogram":
+        return get_spectogram_dataset_model_and_criterion(args)
+    elif args.train_features.lower() == "waveform":
+        return get_waveform_dataset_and_model(args)
+    else:
+        raise ValueError(f"training features can be raw waveform or spectogram only, '{args.train_features}' given")
 
-                val_losses, recal_sets, precision_sets, APs = eval(model, data_loader, criterion, outputs_dir, iteration=iterations,
-                                                                   device=device, plot_samples=plot_samples)
-                print('AP: ', np.average(APs))
 
-                plotter.report_validation_metrics(val_losses, recal_sets, precision_sets, APs, iterations)
-                plotter.plot(outputs_dir)
-                
-                checkpoint = {
-                    'iterations': iterations,
-                    'model': model.state_dict(),
-                    'optimizer': optimizer.state_dict()}
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Example of parser. ')
 
-                torch.save(checkpoint, os.path.join(outputs_dir, 'checkpoints', f"iteration_{iterations}.pth"))
+    # Traininng'
+    parser.add_argument('--dataset_dir', type=str, default='data', help='Directory of dataset.')
+    parser.add_argument('--dataset_name', type=str, default='TAU', help='FilmClap or TAU')
+    parser.add_argument('--train_features', type=str, default='Spectogram', help='Spectogram or Waveform')
 
-            if iterations == num_steps:
-                break
-        epoch += 1
-        if epoch % 10 == 0:
-            on_augment()
+    # Spectogram only arguments
+    parser.add_argument('--preprocess_mode', type=str, default='Complex', help='logMel or Complex; relevant only for Spectogram features')
+    parser.add_argument('--force_preprocess', action='store_true', default=False, help='relevant only for Spectogram features')
+
+    # Train
+    parser.add_argument('--outputs_root', type=str, default='training_dir')
+    parser.add_argument('--ckpt', type=str, default='')
+    parser.add_argument('--val_descriptor', default=0.2, help='float for percentage string for specifying fold substring')
+    parser.add_argument('--train_tag', type=str, default='')
+
+    # Training tricks
+    parser.add_argument('--augment_data', action='store_true', default=True)
+    parser.add_argument('--balance_classes', action='store_true', default=False,
+                        help='Whether to make sure there is same number of samples with and without events')
+    parser.add_argument('--recall_priority', type=float, default=5, help='priority factor for the bce loss')
+
+    # Hyper parameters
+    parser.add_argument('--batch_size', type=int, default=128)
+    parser.add_argument('--lr', type=float, default=0.000001)
+    parser.add_argument('--num_train_steps', type=int, default=100000)
+    parser.add_argument('--log_freq', type=int, default=300)
+    parser.add_argument('--check_freq', type=int, default=500)
+    parser.add_argument('--sample_freq', type=int, default=1000)
+
+    # Infrastructure
+    parser.add_argument('--device', default='cuda:0', type=str)
+    parser.add_argument('--num_workers', default=4, type=int)
+
+    args = parser.parse_args()
+
+    device = torch.device("cuda:0" if torch.cuda.is_available() and args.device == "cuda:0" else "mps")
+
+    dataset, model, criterion, cfg_descriptor = get_dataset_and_model(args)
+
+    dataloader = DataLoader(dataset, batch_size=args.batch_size, num_workers=args.num_workers)
+
+    model = model.to(device)
+    model.model_description()
+
+    train_name = f"{args.dataset_name}_cfg({cfg_descriptor}_b{args.batch_size}_lr{args.lr}_{args.train_tag}"
+    if args.balance_classes:
+        train_name += "_BC"
+    if args.augment_data:
+        train_name += "_AD"
+
+    train(
+        model, 
+        dataloader, 
+        criterion,
+        num_steps=args.num_train_steps,
+        outputs_dir=os.path.join(args.outputs_root, train_name),
+        device=device,
+        lr=args.lr,
+        log_freq=args.log_freq,
+        check_freq=args.check_freq,
+        sample_freq=args.sample_freq,
+        on_augment=lambda: dataset.augment_and_preprocess_mel()
+    )

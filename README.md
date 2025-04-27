@@ -2,11 +2,11 @@ Train and evaluation of sound-event detector.
 
 # Train a CNN detector:
 Train 2d CNN on wavesound spectogram image or a 1d CNN on raw sound wave samples
-- run main.py
+- run train.py
 
 # Train an SVM detector:
 Train an SVM on Spectogram columns or frames of raw sound wave samples
-- run main.py
+- run train.py
 
 # Requirements
 - soundfile
