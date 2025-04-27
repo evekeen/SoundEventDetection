@@ -3,6 +3,8 @@ import logging
 from typing import Optional, Dict, Any, List
 from supabase import create_client, Client
 from dotenv import load_dotenv
+import datetime
+import json
 
 # Load environment variables
 load_dotenv()
@@ -16,6 +18,12 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
 # Get bucket name from environment or use default
 BUCKET_NAME = os.getenv("BUCKET_NAME")
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (datetime.datetime, datetime.date)):
+            return obj.isoformat()
+        return super().default(obj)
 
 class SupabaseClient:
     def __init__(self):
@@ -64,7 +72,15 @@ class SupabaseClient:
     def create_task(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new task in the database"""
         try:
-            response = self.client.table("tasks").insert(task_data).execute()
+            # Serialize datetime objects to ISO format strings
+            serialized_data = {}
+            for key, value in task_data.items():
+                if isinstance(value, (datetime.datetime, datetime.date)):
+                    serialized_data[key] = value.isoformat()
+                else:
+                    serialized_data[key] = value
+            
+            response = self.client.table("tasks").insert(serialized_data).execute()
             if response.data and len(response.data) > 0:
                 logger.info(f"Task created with ID: {response.data[0]['id']}")
                 return response.data[0]
@@ -88,7 +104,15 @@ class SupabaseClient:
     def update_task(self, task_id: str, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Update a task by ID"""
         try:
-            response = self.client.table("tasks").update(update_data).eq("id", task_id).execute()
+            # Serialize datetime objects to ISO format strings
+            serialized_data = {}
+            for key, value in update_data.items():
+                if isinstance(value, (datetime.datetime, datetime.date)):
+                    serialized_data[key] = value.isoformat()
+                else:
+                    serialized_data[key] = value
+            
+            response = self.client.table("tasks").update(serialized_data).eq("id", task_id).execute()
             if response.data and len(response.data) > 0:
                 logger.info(f"Task {task_id} updated successfully")
                 return response.data[0]
