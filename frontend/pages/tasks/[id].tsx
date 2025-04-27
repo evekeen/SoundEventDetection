@@ -93,7 +93,7 @@ export default function TaskDetail() {
       case 'completed':
         return (
           <div className="py-2 px-4 bg-green-100 text-green-800 rounded-full inline-block">
-            Processing completed
+            Ready
           </div>
         );
       case 'processing':
@@ -127,11 +127,11 @@ export default function TaskDetail() {
 
       <main className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-6 flex items-center justify-between">
-          <div>
+          <div className="flex items-center">
             <Link href="/" className="text-blue-600 hover:text-blue-800">
               ← Back to tasks
             </Link>
-            <h1 className="text-3xl font-bold mt-2">{task.original_filename}</h1>
+            <span className="text-md font-bold ml-4">{task.original_filename.length > 50 ? `${task.original_filename.substring(0, 50)}...` : task.original_filename}</span>
           </div>
           {getStatusUI()}
         </div>
