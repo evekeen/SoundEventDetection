@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  api:
+    image: ivkin/tracker
+    build:
+      context: .
+      dockerfile: server.Dockerfile
+    container_name: tracker
+    ports:
+      - "8080:8080"
+    environment:
+      - MODEL_CHECKPOINT=/app/model_checkpoint.pt
+    volumes:
+      - ./inference_outputs:/app/inference_outputs
+      - ./model_checkpoint.pt:/app/model_checkpoint.pt
